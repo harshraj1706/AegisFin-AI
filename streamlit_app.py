@@ -376,6 +376,28 @@ tab_form, tab_json, tab_about = st.tabs(["📝 Loan Assessment Form", "💻 Raw 
 # 5. TAB 1: INTERACTIVE FORM
 # -----------------------------------------------------------------------------
 with tab_form:
+    # Helpful introductory guide explaining parameters
+    with st.expander("💡 Parameter & Terminology Guide (Click to expand)", expanded=False):
+        st.markdown(
+            """
+            <div style="font-size: 13px; line-height: 1.65; color: #334155; padding: 4px;">
+                <p style="margin-top:0; font-weight:600; font-size:14px; color:#1e293b;">📘 Quick Reference for Input Parameters:</p>
+                <ul style="margin-bottom: 8px;">
+                    <li><strong>Contract Type:</strong> <em>Cash loans</em> (fixed lump-sum personal/business term loans) vs. <em>Revolving loans</em> (credit lines/cards where money can be repeatedly borrowed and repaid).</li>
+                    <li><strong>Credit Amount Requested:</strong> The total loan principal amount requested from the lender.</li>
+                    <li><strong>Loan Annuity / EMI:</strong> The monthly or periodic repayment installment amount required to service the loan.</li>
+                    <li><strong>Goods / Asset Price:</strong> The purchase invoice price or fair market value of the item/asset being financed. For unsecured cash loans, this is typically equal to or slightly lower than the credit amount.</li>
+                    <li><strong>Total Annual Income:</strong> Total gross annual earnings across salary, business, investments, and other declared sources.</li>
+                    <li><strong>Employment Tenure:</strong> Number of consecutive years at current employer. Longer tenure signifies employment stability.</li>
+                    <li><strong>External Scores (EXT_SOURCE 1 / 2 / 3):</strong> Normalized credit bureau rating scores (scale 0.0 to 1.0; higher score = lower default risk).</li>
+                    <li><strong>Social Circle Overdue Defaults:</strong> Number of known contacts/associates with 30+ or 60+ days past-due payment defaults.</li>
+                </ul>
+                <p style="margin-bottom:0; font-style:italic; color:#64748b;">Tip: Hover over the <strong>(?)</strong> tooltip icon beside any input field for specific field guidance.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     st.markdown("#### 1. Loan & Demographics Profile")
     
     with st.container():
@@ -386,6 +408,7 @@ with tab_form:
                 "Contract Type",
                 options=["Cash loans", "Revolving loans"],
                 index=0 if current_app.get("contract_type") == "Cash loans" else 1,
+                help="Type of credit agreement: 'Cash loans' (fixed term lump-sum loan) or 'Revolving loans' (open-ended credit line / credit card).",
             )
             credit_amount = st.number_input(
                 "Credit Amount Requested ($ / ₹)",
@@ -393,20 +416,23 @@ with tab_form:
                 max_value=10000000.0,
                 value=float(current_app.get("credit_amount", 800000.0)),
                 step=10000.0,
+                help="Total loan principal amount requested by the borrower.",
             )
             annuity_amount = st.number_input(
-                "Loan Annuity Amount ($ / ₹)",
+                "Loan Annuity / EMI Amount ($ / ₹)",
                 min_value=100.0,
                 max_value=1000000.0,
                 value=float(current_app.get("annuity_amount", 35000.0)),
                 step=1000.0,
+                help="Periodic repayment installment (EMI) required to service the requested loan.",
             )
             goods_price = st.number_input(
-                "Goods Price (for consumer loans)",
+                "Goods / Asset Price ($ / ₹)",
                 min_value=0.0,
                 max_value=10000000.0,
                 value=float(current_app.get("goods_price", 700000.0)),
                 step=10000.0,
+                help="The purchase price of the item/goods/property being financed. For personal cash loans, set this equal to or close to the requested credit amount.",
             )
 
         with col2:
@@ -416,17 +442,20 @@ with tab_form:
                 max_value=50000000.0,
                 value=float(current_app.get("annual_income", 450000.0)),
                 step=25000.0,
+                help="Total gross annual earnings of the applicant across employment, business, pensions, or other declared sources.",
             )
             age_years = st.slider(
                 "Applicant Age (Years)",
                 min_value=18,
                 max_value=90,
                 value=int(current_app.get("age_years", 32)),
+                help="Applicant's current age in years. Used to evaluate credit lifecycle and remaining working years.",
             )
             gender = st.selectbox(
                 "Gender",
                 options=["M", "F", "XNA"],
                 index=["M", "F", "XNA"].index(current_app.get("gender", "M")) if current_app.get("gender") in ["M", "F", "XNA"] else 0,
+                help="Applicant's gender (M = Male, F = Female, XNA = Not Specified).",
             )
             education_options = [
                 "Higher education",
@@ -440,6 +469,7 @@ with tab_form:
                 "Education Level",
                 options=education_options,
                 index=education_options.index(cur_edu) if cur_edu in education_options else 0,
+                help="Highest level of formal education completed by the applicant.",
             )
 
         with col3:
@@ -455,18 +485,21 @@ with tab_form:
                 "Family Status",
                 options=family_options,
                 index=family_options.index(cur_fam) if cur_fam in family_options else 0,
+                help="Legal marital and domestic status of the applicant.",
             )
             children = st.number_input(
                 "Number of Children",
                 min_value=0,
                 max_value=15,
                 value=int(current_app.get("children", 1)),
+                help="Count of dependent children supported by the applicant.",
             )
             family_members = st.number_input(
                 "Total Family Members",
                 min_value=1.0,
                 max_value=20.0,
                 value=float(current_app.get("family_members", 3.0)),
+                help="Total number of people living in the applicant's household (used to compute per-capita disposable income).",
             )
             housing_options = [
                 "House / apartment",
@@ -481,6 +514,7 @@ with tab_form:
                 "Housing Type",
                 options=housing_options,
                 index=housing_options.index(cur_house) if cur_house in housing_options else 0,
+                help="Primary residential ownership/living arrangement of the applicant.",
             )
 
     st.markdown("#### 2. Employment & Asset Portfolio")
@@ -503,6 +537,7 @@ with tab_form:
                 "Income Type",
                 options=income_types,
                 index=income_types.index(cur_inc_type) if cur_inc_type in income_types else 0,
+                help="Primary source/classification of employment income.",
             )
             
             occupation_types = [
@@ -530,6 +565,7 @@ with tab_form:
                 "Occupation Category",
                 options=occupation_types,
                 index=occupation_types.index(cur_occ) if cur_occ in occupation_types else 0,
+                help="Specific job function or professional specialization.",
             )
 
         with ecol2:
@@ -539,14 +575,20 @@ with tab_form:
                 max_value=50.0,
                 value=float(current_app.get("employment_years", 6.0)),
                 step=0.5,
+                help="Total consecutive years employed at the current company/organization. Higher tenure reflects stability.",
             )
             organization_type = st.text_input(
                 "Organization Type",
                 value=str(current_app.get("organization_type", "Business Entity Type 3")),
+                help="Industry category or corporate classification of the employer organization.",
             )
 
         with ecol3:
-            owns_car = st.checkbox("Owns Car", value=bool(current_app.get("owns_car", True)))
+            owns_car = st.checkbox(
+                "Owns Car",
+                value=bool(current_app.get("owns_car", True)),
+                help="Indicates whether the applicant owns one or more personal vehicles.",
+            )
             own_car_age = None
             if owns_car:
                 own_car_age = st.number_input(
@@ -554,30 +596,109 @@ with tab_form:
                     min_value=0.0,
                     max_value=60.0,
                     value=float(current_app.get("own_car_age_years", 4.0) or 4.0),
+                    help="Age of applicant's primary vehicle in years.",
                 )
-            owns_realty = st.checkbox("Owns Realty / Property", value=bool(current_app.get("owns_realty", True)))
-            work_phone = st.checkbox("Work Phone Registered", value=bool(current_app.get("work_phone", True)))
+            owns_realty = st.checkbox(
+                "Owns Realty / Property",
+                value=bool(current_app.get("owns_realty", True)),
+                help="Indicates whether the applicant owns real estate (house, apartment, or land).",
+            )
+            work_phone = st.checkbox(
+                "Work Phone Registered",
+                value=bool(current_app.get("work_phone", True)),
+                help="Indicates whether a verified workplace contact phone number was provided.",
+            )
 
     with st.expander("🛡️ Advanced Bureau & Risk Enrichment Signals (Optional / Automated)", expanded=False):
+        st.markdown(
+            """
+            <div style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
+                These signals are typically enriched automatically from credit bureaus (e.g. CIBIL, Experian, Equifax) and institutional registries.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         bcol1, bcol2, bcol3 = st.columns(3)
         
         with bcol1:
-            ext_1 = st.slider("External Score 1 (EXT_SOURCE_1)", 0.0, 1.0, float(current_enr.get("ext_source_1", 0.42) or 0.42), 0.01)
-            ext_2 = st.slider("External Score 2 (EXT_SOURCE_2)", 0.0, 1.0, float(current_enr.get("ext_source_2", 0.62) or 0.62), 0.01)
-            ext_3 = st.slider("External Score 3 (EXT_SOURCE_3)", 0.0, 1.0, float(current_enr.get("ext_source_3", 0.71) or 0.71), 0.01)
+            ext_1 = st.slider(
+                "External Score 1 (EXT_SOURCE_1)",
+                0.0,
+                1.0,
+                float(current_enr.get("ext_source_1", 0.42) or 0.42),
+                0.01,
+                help="Normalized credit bureau rating score from External Agency 1 (scale 0.0 to 1.0; higher = safer borrower).",
+            )
+            ext_2 = st.slider(
+                "External Score 2 (EXT_SOURCE_2)",
+                0.0,
+                1.0,
+                float(current_enr.get("ext_source_2", 0.62) or 0.62),
+                0.01,
+                help="Normalized credit bureau rating score from External Agency 2 (scale 0.0 to 1.0; key predictive default signal).",
+            )
+            ext_3 = st.slider(
+                "External Score 3 (EXT_SOURCE_3)",
+                0.0,
+                1.0,
+                float(current_enr.get("ext_source_3", 0.71) or 0.71),
+                0.01,
+                help="Normalized credit bureau rating score from External Agency 3 (scale 0.0 to 1.0; independent agency metric).",
+            )
             
         with bcol2:
-            days_id = st.number_input("Days Since ID Publish", value=float(current_enr.get("days_id_publish", -2500.0)))
-            days_phone = st.number_input("Days Since Last Phone Change", value=float(current_enr.get("days_last_phone_change", -300.0)))
-            days_reg = st.number_input("Days Since Registration", value=float(current_enr.get("days_registration", -5000.0)))
-            region_rating = st.selectbox("Region Rating Client With City", options=[1, 2, 3], index=int(current_enr.get("region_rating_client_w_city", 2)) - 1)
+            days_id = st.number_input(
+                "Days Since ID Publish",
+                value=float(current_enr.get("days_id_publish", -2500.0)),
+                help="Days elapsed since applicant's national identity document was issued/renewed (negative value relative to application date).",
+            )
+            days_phone = st.number_input(
+                "Days Since Last Phone Change",
+                value=float(current_enr.get("days_last_phone_change", -300.0)),
+                help="Days elapsed since applicant changed their primary contact phone number (higher negative numbers = longer stability).",
+            )
+            days_reg = st.number_input(
+                "Days Since Registration",
+                value=float(current_enr.get("days_registration", -5000.0)),
+                help="Days elapsed since applicant registered their residential address.",
+            )
+            region_rating = st.selectbox(
+                "Region Rating Client With City",
+                options=[1, 2, 3],
+                index=int(current_enr.get("region_rating_client_w_city", 2)) - 1,
+                help="Regional banking credit risk tier of applicant's city/region (1 = Prime Metropolitan / Lowest Risk, 3 = High Risk / Rural).",
+            )
 
         with bcol3:
-            bureau_qrt = st.number_input("Bureau Queries (Quarter)", min_value=0.0, value=float(current_enr.get("credit_bureau_quarter", 1.0)))
-            bureau_yr = st.number_input("Bureau Queries (Year)", min_value=0.0, value=float(current_enr.get("credit_bureau_year", 2.0)))
-            def_30 = st.number_input("Social Circle Def 30 Count", min_value=0.0, value=float(current_enr.get("def_30_cnt_social_circle", 0.0)))
-            def_60 = st.number_input("Social Circle Def 60 Count", min_value=0.0, value=float(current_enr.get("def_60_cnt_social_circle", 0.0)))
-            flag_doc3 = st.checkbox("Flag Document 3 Provided", value=bool(current_enr.get("flag_document_3", True)))
+            bureau_qrt = st.number_input(
+                "Bureau Queries (Quarter)",
+                min_value=0.0,
+                value=float(current_enr.get("credit_bureau_quarter", 1.0)),
+                help="Number of credit inquiries recorded by credit bureaus for this applicant in the last 3 months.",
+            )
+            bureau_yr = st.number_input(
+                "Bureau Queries (Year)",
+                min_value=0.0,
+                value=float(current_enr.get("credit_bureau_year", 2.0)),
+                help="Number of credit inquiries recorded by credit bureaus for this applicant in the last 12 months.",
+            )
+            def_30 = st.number_input(
+                "Social Circle Def 30 Count",
+                min_value=0.0,
+                value=float(current_enr.get("def_30_cnt_social_circle", 0.0)),
+                help="Count of applicant's social contacts/associates who had payment defaults past due by 30+ days.",
+            )
+            def_60 = st.number_input(
+                "Social Circle Def 60 Count",
+                min_value=0.0,
+                value=float(current_enr.get("def_60_cnt_social_circle", 0.0)),
+                help="Count of applicant's social contacts/associates who had payment defaults past due by 60+ days.",
+            )
+            flag_doc3 = st.checkbox(
+                "Flag Document 3 Provided",
+                value=bool(current_enr.get("flag_document_3", True)),
+                help="KYC verification flag: whether primary national identity proof (Document 3) was submitted.",
+            )
 
     # Assemble structured payload
     constructed_request = {
@@ -637,6 +758,7 @@ with tab_json:
         "Request JSON (Pydantic / FastAPI schema)",
         value=json.dumps(st.session_state.get("current_payload", PRESETS["🟡 Moderate Risk Applicant"]), indent=2),
         height=380,
+        help="Paste a complete JSON payload matching the Pydantic PredictionRequest schema to test the model pipeline.",
     )
     json_predict_clicked = st.button("🚀 Execute Prediction on Custom JSON", type="primary", use_container_width=True)
 
@@ -656,6 +778,21 @@ with tab_about:
           - Composite Bureau aggregations (`EXT_SOURCE_MEAN`, `EXT_SOURCE_STD`, `EXT_SOURCE_MIN`, `EXT_SOURCE_MAX`)
           - Day count normalization and categorical missing imputation.
         - **Schema Design**: Two-tier ingestion separating clean customer self-reported attributes from institutional enrichment records.
+        
+        ---
+        
+        ### 📋 Input Parameter Definitions & Risk Impact
+        
+        | Parameter | Domain | Description & Impact on Underwriting |
+        | :--- | :--- | :--- |
+        | **Contract Type** | Demographics / Loan | Specifies whether the facility is a lump-sum term loan (*Cash loans*) or a reusable revolving line (*Revolving loans*). |
+        | **Credit Amount** | Financial ($ / ₹) | Total principal amount requested. Higher credit amounts relative to income elevate the Debt-to-Income (DTI) ratio. |
+        | **Loan Annuity** | Financial ($ / ₹) | Periodic repayment obligation (EMI). Used to compute Debt Service Coverage & Annuity Burden (% of monthly earnings). |
+        | **Goods / Asset Price** | Financial ($ / ₹) | Value or purchase price of the underlying asset/goods financed. Determines Loan-to-Value (LTV) coverage. |
+        | **Total Annual Income** | Financial ($ / ₹) | Declared annual gross earnings. Forms the denominator for debt service and per-capita household capacity. |
+        | **Employment Tenure** | Employment | Years spent with current employer. Strong negative correlation with early default risk. |
+        | **External Scores (1/2/3)** | Bureau Signal | Normalized credit bureau scores (0.0 to 1.0). Aggregated into statistical mean/dispersion features with high predictive power. |
+        | **Social Circle Defaults** | Risk Network | Count of social circle contacts delinquent by 30+ or 60+ days, capturing clustered network risk. |
         """
     )
 
