@@ -1,0 +1,63 @@
+# ==============================================================================
+# AegisFin-AI Phase 1 — Recommended .gitignore
+# ==============================================================================
+
+# Python Bytecode and Compilation Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Test & Coverage Artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables & Secrets (CRITICAL: Never commit credentials)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# System & OS Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# IDE & Editor Settings
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Application Logs & Temporary Files
+*.log
+scratch/
+temp/
+tmp/
+
+# Root duplicate model (keep models/aegisfin_phase1_final_model.pkl)
+# /aegisfin_phase1_final_model.pkl
+
+# Optional: If you choose NOT to track model weights in Git, uncomment below:
+# models/*.pkl
+# *.pkl
