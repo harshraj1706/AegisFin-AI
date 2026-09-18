@@ -12,7 +12,7 @@ def test_model_service_direct_inference():
     service = get_service()
     info = service.info()
     assert info["model_name"] == "XGBoost"
-    assert info["model_version"] == "phase1"
+    assert info["model_version"] == "credit-xgb-v1.0.0"
     assert info["feature_count"] == 183
 
     sample_path = Path(__file__).resolve().parents[1] / "sample_request.json"
@@ -33,6 +33,8 @@ def test_fastapi_health_endpoint():
     assert data["status"] == "ok"
     assert data["model_loaded"] is True
     assert data["model_name"] == "XGBoost"
+    assert data["model_version"] == "credit-xgb-v1.0.0"
+    assert data["calibration_version"] == "credit-calibration-v1.0.0"
 
 
 def test_fastapi_predict_endpoint():
@@ -45,8 +47,12 @@ def test_fastapi_predict_endpoint():
     res = response.json()
     assert "default_probability" in res
     assert 0.0 <= res["default_probability"] <= 1.0
-    assert res["model"] == "XGBoost"
-    assert res["model_version"] == "phase1"
+    assert "risk_band" in res
+    assert res["risk_band"] in {"LOW", "MODERATE", "ELEVATED", "HIGH"}
+    assert res["model_name"] == "XGBoost"
+    assert res["model_version"] == "credit-xgb-v1.0.0"
+    assert res["calibration_version"] == "credit-calibration-v1.0.0"
+    assert res["policy_version"] == "credit-risk-policy-v1.0.0"
     assert res["feature_count"] == 183
 
 
