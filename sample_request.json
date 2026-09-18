@@ -1,0 +1,43 @@
+{
+  "application": {
+    "contract_type": "Cash loans",
+    "credit_amount": 800000,
+    "annuity_amount": 35000,
+    "goods_price": 700000,
+    "age_years": 32,
+    "gender": "M",
+    "children": 1,
+    "family_members": 3,
+    "family_status": "Married",
+    "education_type": "Higher education",
+    "income_type": "Working",
+    "annual_income": 450000,
+    "occupation_type": "Managers",
+    "organization_type": "Business Entity Type 3",
+    "employment_years": 6,
+    "housing_type": "House / apartment",
+    "owns_car": true,
+    "owns_realty": true,
+    "own_car_age_years": 4,
+    "work_phone": true,
+    "weekday_application": "MONDAY"
+  },
+  "enrichment": {
+    "ext_source_1": 0.42,
+    "ext_source_2": 0.62,
+    "ext_source_3": 0.71,
+    "days_id_publish": -2500,
+    "days_last_phone_change": -300,
+    "days_registration": -5000,
+    "region_rating_client_w_city": 2,
+    "region_population_relative": 0.0188,
+    "reg_city_not_live_city": false,
+    "credit_bureau_quarter": 1,
+    "credit_bureau_year": 2,
+    "def_30_cnt_social_circle": 0,
+    "def_60_cnt_social_circle": 0,
+    "flag_document_3": true,
+    "flag_work_phone": true
+  },
+  "raw_overrides": {}
+}
