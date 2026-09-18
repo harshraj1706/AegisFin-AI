@@ -137,7 +137,7 @@ MODEL_PATH = Path(
 )
 
 PRESETS = {
-    "🟢 Prime Borrower (Low Risk)": {
+    "🟢 Prime Borrower (Low Risk Band, < 15%)": {
         "application": {
             "contract_type": "Cash loans",
             "credit_amount": 500000.0,
@@ -180,66 +180,66 @@ PRESETS = {
         },
         "raw_overrides": {},
     },
-    "🟡 Moderate Risk Applicant": {
+    "🟡 Moderate Risk Applicant (Moderate Band, 15% - 40%)": {
         "application": {
             "contract_type": "Cash loans",
-            "credit_amount": 800000.0,
-            "annuity_amount": 35000.0,
-            "goods_price": 700000.0,
-            "age_years": 32.0,
+            "credit_amount": 850000.0,
+            "annuity_amount": 38000.0,
+            "goods_price": 750000.0,
+            "age_years": 30.0,
             "gender": "M",
             "children": 1,
             "family_members": 3.0,
             "family_status": "Married",
-            "education_type": "Higher education",
+            "education_type": "Secondary / secondary special",
             "income_type": "Working",
-            "annual_income": 450000.0,
-            "occupation_type": "Managers",
+            "annual_income": 280000.0,
+            "occupation_type": "Laborers",
             "organization_type": "Business Entity Type 3",
-            "employment_years": 6.0,
+            "employment_years": 1.5,
             "housing_type": "House / apartment",
-            "owns_car": True,
+            "owns_car": False,
             "owns_realty": True,
-            "own_car_age_years": 4.0,
+            "own_car_age_years": None,
             "work_phone": True,
             "weekday_application": "MONDAY",
         },
         "enrichment": {
-            "ext_source_1": 0.42,
-            "ext_source_2": 0.62,
-            "ext_source_3": 0.71,
-            "days_id_publish": -2500.0,
-            "days_last_phone_change": -300.0,
-            "days_registration": -5000.0,
+            "ext_source_1": 0.18,
+            "ext_source_2": 0.22,
+            "ext_source_3": 0.20,
+            "days_id_publish": -1800.0,
+            "days_last_phone_change": -120.0,
+            "days_registration": -3500.0,
             "region_rating_client_w_city": 2.0,
             "region_population_relative": 0.0188,
             "reg_city_not_live_city": False,
-            "credit_bureau_quarter": 1.0,
-            "credit_bureau_year": 2.0,
-            "def_30_cnt_social_circle": 0.0,
+            "credit_bureau_quarter": 2.0,
+            "credit_bureau_year": 4.0,
+            "def_30_cnt_social_circle": 1.0,
             "def_60_cnt_social_circle": 0.0,
             "flag_document_3": True,
             "flag_work_phone": True,
         },
         "raw_overrides": {},
     },
-    "🔴 High Risk Profile": {
+    "🔴 Elevated Risk Profile (Elevated Band, 40% - 70%)": {
         "application": {
             "contract_type": "Cash loans",
             "credit_amount": 950000.0,
             "annuity_amount": 55000.0,
             "goods_price": 850000.0,
-            "age_years": 23.0,
+            "age_years": 22.0,
             "gender": "M",
             "children": 2,
             "family_members": 4.0,
             "family_status": "Single / not married",
-            "education_type": "Secondary / secondary special",
+            "education_type": "Lower secondary",
             "income_type": "Working",
-            "annual_income": 200000.0,
-            "occupation_type": "Laborers",
+            "annual_income": 180000.0,
+            "occupation_type": "Low-skill Laborers",
             "organization_type": "Self-employed",
-            "employment_years": 0.8,
+            "employment_years": 0.3,
             "housing_type": "Rented apartment",
             "owns_car": False,
             "owns_realty": False,
@@ -248,19 +248,19 @@ PRESETS = {
             "weekday_application": "FRIDAY",
         },
         "enrichment": {
-            "ext_source_1": 0.15,
-            "ext_source_2": 0.22,
-            "ext_source_3": 0.18,
-            "days_id_publish": -800.0,
-            "days_last_phone_change": -45.0,
-            "days_registration": -1200.0,
+            "ext_source_1": 0.08,
+            "ext_source_2": 0.10,
+            "ext_source_3": 0.07,
+            "days_id_publish": -500.0,
+            "days_last_phone_change": -30.0,
+            "days_registration": -800.0,
             "region_rating_client_w_city": 3.0,
             "region_population_relative": 0.008,
             "reg_city_not_live_city": True,
             "credit_bureau_quarter": 4.0,
-            "credit_bureau_year": 8.0,
-            "def_30_cnt_social_circle": 2.0,
-            "def_60_cnt_social_circle": 1.0,
+            "credit_bureau_year": 7.0,
+            "def_30_cnt_social_circle": 3.0,
+            "def_60_cnt_social_circle": 2.0,
             "flag_document_3": False,
             "flag_work_phone": False,
         },
@@ -315,16 +315,30 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("### 📦 Quick Scenario Presets")
+    
+    preset_names = list(PRESETS.keys())
+    
+    def on_preset_select():
+        sel = st.session_state.get("preset_dropdown_selector")
+        if sel and sel in PRESETS:
+            st.session_state["current_payload"] = PRESETS[sel]
+            st.session_state["preset_nonce"] = st.session_state.get("preset_nonce", 0) + 1
+
     selected_preset_name = st.selectbox(
         "Load Preset Profile",
-        options=list(PRESETS.keys()),
-        index=1,
+        options=preset_names,
+        index=0,
+        key="preset_dropdown_selector",
+        on_change=on_preset_select,
+        help="Select a benchmark profile to instantly load its financial parameters into the assessment form.",
     )
     
     if st.button("⚡ Apply Preset to Form", use_container_width=True):
-        preset_data = PRESETS[selected_preset_name]
+        cur_sel = st.session_state.get("preset_dropdown_selector", selected_preset_name)
+        preset_data = PRESETS[cur_sel]
         st.session_state["current_payload"] = preset_data
-        st.success(f"Loaded '{selected_preset_name}'!")
+        st.session_state["preset_nonce"] = st.session_state.get("preset_nonce", 0) + 1
+        st.success(f"Loaded '{cur_sel}'!")
         st.rerun()
 
     st.markdown("---")
@@ -350,10 +364,13 @@ with st.sidebar:
 
 # Initialize session state payload if absent
 if "current_payload" not in st.session_state:
-    st.session_state["current_payload"] = PRESETS["🟡 Moderate Risk Applicant"]
+    first_preset = list(PRESETS.keys())[0]
+    st.session_state["current_payload"] = PRESETS[first_preset]
+    st.session_state["preset_nonce"] = 0
 
 current_app = st.session_state["current_payload"].get("application", {})
 current_enr = st.session_state["current_payload"].get("enrichment", {})
+nonce = st.session_state.get("preset_nonce", 0)
 
 # -----------------------------------------------------------------------------
 # 4. MAIN HEADER & HERO
@@ -381,22 +398,22 @@ tab_form, tab_json, tab_about = st.tabs(["📝 Loan Assessment Form", "💻 Raw 
 # -----------------------------------------------------------------------------
 with tab_form:
     # Helpful introductory guide explaining parameters
-    with st.expander("💡 Parameter & Terminology Guide (Click to expand)", expanded=False):
+    with st.expander("💡 Parameter & Terminology Guide (Plain-English Explanations)", expanded=True):
         st.markdown(
             """
             <div style="font-size: 13px; line-height: 1.65; color: #334155; padding: 4px;">
-                <p style="margin-top:0; font-weight:600; font-size:14px; color:#1e293b;">📘 Quick Reference for Input Parameters:</p>
+                <p style="margin-top:0; font-weight:600; font-size:14px; color:#1e293b;">📘 Plain-English Guide to Input Parameters & Financial Ratios:</p>
                 <ul style="margin-bottom: 8px;">
-                    <li><strong>Contract Type:</strong> <em>Cash loans</em> (fixed lump-sum personal/business term loans) vs. <em>Revolving loans</em> (credit lines/cards where money can be repeatedly borrowed and repaid).</li>
-                    <li><strong>Credit Amount Requested:</strong> The total loan principal amount requested from the lender.</li>
-                    <li><strong>Loan Annuity / EMI:</strong> The monthly or periodic repayment installment amount required to service the loan.</li>
-                    <li><strong>Goods / Asset Price:</strong> The purchase invoice price or fair market value of the item/asset being financed. For unsecured cash loans, this is typically equal to or slightly lower than the credit amount.</li>
-                    <li><strong>Total Annual Income:</strong> Total gross annual earnings across salary, business, investments, and other declared sources.</li>
-                    <li><strong>Employment Tenure:</strong> Number of consecutive years at current employer. Longer tenure signifies employment stability.</li>
-                    <li><strong>External Scores (EXT_SOURCE 1 / 2 / 3):</strong> Normalized credit bureau rating scores (scale 0.0 to 1.0; higher score = lower default risk).</li>
-                    <li><strong>Social Circle Overdue Defaults:</strong> Number of known contacts/associates with 30+ or 60+ days past-due payment defaults.</li>
+                    <li><strong>Contract Type:</strong> <em>Cash loans</em> (fixed lump-sum term loans disbursed once and repaid via EMI) vs. <em>Revolving loans</em> (flexible credit lines or credit cards where funds can be repeatedly borrowed and repaid).</li>
+                    <li><strong>Credit Amount Requested (₹):</strong> The total loan principal amount requested by the applicant.</li>
+                    <li><strong>Loan Annuity / EMI Amount (₹):</strong> The scheduled repayment installment (EMI) needed to service the loan. Used to evaluate your repayment burden.</li>
+                    <li><strong>Goods / Asset Price (₹):</strong> The invoice or purchase price of the item/property being financed. For unsecured personal cash loans, set this equal to or close to the Credit Amount Requested.</li>
+                    <li><strong>Total Annual Income (₹):</strong> Total gross annual income across salary, business, investments, and other verifiable sources.</li>
+                    <li><strong>Employment Tenure:</strong> Continuous years with current employer. Longer tenure signifies higher job stability.</li>
+                    <li><strong>External Scores (EXT_SOURCE 1 / 2 / 3):</strong> Independent credit bureau rating scores (normalized from 0.0 to 1.0, similar to CIBIL or Experian scores). Higher scores indicate stronger repayment history and lower risk.</li>
+                    <li><strong>Social Circle Overdue Defaults:</strong> Count of acquaintances or social circle contacts who have defaulted on loans by 30+ or 60+ days.</li>
                 </ul>
-                <p style="margin-bottom:0; font-style:italic; color:#64748b;">Tip: Hover over the <strong>(?)</strong> tooltip icon beside any input field for specific field guidance.</p>
+                <p style="margin-bottom:0; font-style:italic; color:#64748b;">Tip: All financial amounts are in Indian Rupees (₹). Hover over any <strong>(?)</strong> icon for field-specific guidance.</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -412,53 +429,64 @@ with tab_form:
                 "Contract Type",
                 options=["Cash loans", "Revolving loans"],
                 index=0 if current_app.get("contract_type") == "Cash loans" else 1,
+                key=f"contract_type_{nonce}",
                 help="Type of credit agreement: 'Cash loans' (fixed term lump-sum loan) or 'Revolving loans' (open-ended credit line / credit card).",
             )
             credit_amount = st.number_input(
-                "Credit Amount Requested ($ / ₹)",
+                "Credit Amount Requested (₹)",
                 min_value=1000.0,
                 max_value=10000000.0,
-                value=float(current_app.get("credit_amount", 800000.0)),
+                value=float(current_app.get("credit_amount", 500000.0)),
                 step=10000.0,
-                help="Total loan principal amount requested by the borrower.",
+                key=f"credit_amount_{nonce}",
+                help="Total loan principal amount requested by the borrower in Rupees (₹).",
             )
+            st.caption("ℹ️ Total principal amount borrowed from the lender.")
             annuity_amount = st.number_input(
-                "Loan Annuity / EMI Amount ($ / ₹)",
+                "Loan Annuity / EMI Amount (₹)",
                 min_value=100.0,
                 max_value=1000000.0,
-                value=float(current_app.get("annuity_amount", 35000.0)),
+                value=float(current_app.get("annuity_amount", 22000.0)),
                 step=1000.0,
-                help="Periodic repayment installment (EMI) required to service the requested loan.",
+                key=f"annuity_amount_{nonce}",
+                help="Periodic repayment installment (EMI) required to service the requested loan in Rupees (₹).",
             )
+            st.caption("ℹ️ Repayment installment amount (EMI) to service the loan.")
             goods_price = st.number_input(
-                "Goods / Asset Price ($ / ₹)",
+                "Goods / Asset Price (₹)",
                 min_value=0.0,
                 max_value=10000000.0,
-                value=float(current_app.get("goods_price", 700000.0)),
+                value=float(current_app.get("goods_price", 450000.0)),
                 step=10000.0,
-                help="The purchase price of the item/goods/property being financed. For personal cash loans, set this equal to or close to the requested credit amount.",
+                key=f"goods_price_{nonce}",
+                help="The purchase price of the item/goods/property being financed in Rupees (₹). For personal cash loans, set this equal or close to the requested credit amount.",
             )
+            st.caption("ℹ️ Value of item/asset financed (for cash loans, match credit amount).")
 
         with col2:
             annual_income = st.number_input(
-                "Total Annual Income ($ / ₹)",
+                "Total Annual Income (₹)",
                 min_value=10000.0,
                 max_value=50000000.0,
-                value=float(current_app.get("annual_income", 450000.0)),
+                value=float(current_app.get("annual_income", 650000.0)),
                 step=25000.0,
-                help="Total gross annual earnings of the applicant across employment, business, pensions, or other declared sources.",
+                key=f"annual_income_{nonce}",
+                help="Total gross annual earnings of the applicant in Rupees (₹) across employment, business, pensions, or other sources.",
             )
+            st.caption("ℹ️ Total gross yearly income across all declared sources.")
             age_years = st.slider(
                 "Applicant Age (Years)",
                 min_value=18,
                 max_value=90,
-                value=int(current_app.get("age_years", 32)),
+                value=int(current_app.get("age_years", 42)),
+                key=f"age_years_{nonce}",
                 help="Applicant's current age in years. Used to evaluate credit lifecycle and remaining working years.",
             )
             gender = st.selectbox(
                 "Gender",
                 options=["M", "F", "XNA"],
-                index=["M", "F", "XNA"].index(current_app.get("gender", "M")) if current_app.get("gender") in ["M", "F", "XNA"] else 0,
+                index=["M", "F", "XNA"].index(current_app.get("gender", "F")) if current_app.get("gender") in ["M", "F", "XNA"] else 0,
+                key=f"gender_{nonce}",
                 help="Applicant's gender (M = Male, F = Female, XNA = Not Specified).",
             )
             education_options = [
@@ -473,6 +501,7 @@ with tab_form:
                 "Education Level",
                 options=education_options,
                 index=education_options.index(cur_edu) if cur_edu in education_options else 0,
+                key=f"education_type_{nonce}",
                 help="Highest level of formal education completed by the applicant.",
             )
 
@@ -489,22 +518,26 @@ with tab_form:
                 "Family Status",
                 options=family_options,
                 index=family_options.index(cur_fam) if cur_fam in family_options else 0,
+                key=f"family_status_{nonce}",
                 help="Legal marital and domestic status of the applicant.",
             )
             children = st.number_input(
                 "Number of Children",
                 min_value=0,
                 max_value=15,
-                value=int(current_app.get("children", 1)),
+                value=int(current_app.get("children", 0)),
+                key=f"children_{nonce}",
                 help="Count of dependent children supported by the applicant.",
             )
             family_members = st.number_input(
                 "Total Family Members",
                 min_value=1.0,
                 max_value=20.0,
-                value=float(current_app.get("family_members", 3.0)),
+                value=float(current_app.get("family_members", 2.0)),
+                key=f"family_members_{nonce}",
                 help="Total number of people living in the applicant's household (used to compute per-capita disposable income).",
             )
+            st.caption("ℹ️ Household size used to estimate per-capita income.")
             housing_options = [
                 "House / apartment",
                 "With parents",
@@ -518,6 +551,7 @@ with tab_form:
                 "Housing Type",
                 options=housing_options,
                 index=housing_options.index(cur_house) if cur_house in housing_options else 0,
+                key=f"housing_type_{nonce}",
                 help="Primary residential ownership/living arrangement of the applicant.",
             )
 
@@ -541,6 +575,7 @@ with tab_form:
                 "Income Type",
                 options=income_types,
                 index=income_types.index(cur_inc_type) if cur_inc_type in income_types else 0,
+                key=f"income_type_{nonce}",
                 help="Primary source/classification of employment income.",
             )
             
@@ -569,6 +604,7 @@ with tab_form:
                 "Occupation Category",
                 options=occupation_types,
                 index=occupation_types.index(cur_occ) if cur_occ in occupation_types else 0,
+                key=f"occupation_type_{nonce}",
                 help="Specific job function or professional specialization.",
             )
 
@@ -577,13 +613,16 @@ with tab_form:
                 "Employment Tenure (Years)",
                 min_value=0.0,
                 max_value=50.0,
-                value=float(current_app.get("employment_years", 6.0)),
+                value=float(current_app.get("employment_years", 12.0)),
                 step=0.5,
+                key=f"employment_years_{nonce}",
                 help="Total consecutive years employed at the current company/organization. Higher tenure reflects stability.",
             )
+            st.caption("ℹ️ Consecutive years at current employer (reflects job stability).")
             organization_type = st.text_input(
                 "Organization Type",
                 value=str(current_app.get("organization_type", "Business Entity Type 3")),
+                key=f"organization_type_{nonce}",
                 help="Industry category or corporate classification of the employer organization.",
             )
 
@@ -591,6 +630,7 @@ with tab_form:
             owns_car = st.checkbox(
                 "Owns Car",
                 value=bool(current_app.get("owns_car", True)),
+                key=f"owns_car_{nonce}",
                 help="Indicates whether the applicant owns one or more personal vehicles.",
             )
             own_car_age = None
@@ -599,17 +639,20 @@ with tab_form:
                     "Car Age (Years)",
                     min_value=0.0,
                     max_value=60.0,
-                    value=float(current_app.get("own_car_age_years", 4.0) or 4.0),
+                    value=float(current_app.get("own_car_age_years", 3.0) or 3.0),
+                    key=f"own_car_age_{nonce}",
                     help="Age of applicant's primary vehicle in years.",
                 )
             owns_realty = st.checkbox(
                 "Owns Realty / Property",
                 value=bool(current_app.get("owns_realty", True)),
+                key=f"owns_realty_{nonce}",
                 help="Indicates whether the applicant owns real estate (house, apartment, or land).",
             )
             work_phone = st.checkbox(
                 "Work Phone Registered",
                 value=bool(current_app.get("work_phone", True)),
+                key=f"work_phone_{nonce}",
                 help="Indicates whether a verified workplace contact phone number was provided.",
             )
 
@@ -618,6 +661,7 @@ with tab_form:
             """
             <div style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
                 These signals are typically enriched automatically from credit bureaus (e.g. CIBIL, Experian, Equifax) and institutional registries.
+                <strong>Scale:</strong> External Scores range from 0.00 (highest risk) to 1.00 (lowest risk / prime credit).
             </div>
             """,
             unsafe_allow_html=True,
@@ -629,47 +673,55 @@ with tab_form:
                 "External Score 1 (EXT_SOURCE_1)",
                 0.0,
                 1.0,
-                float(current_enr.get("ext_source_1", 0.42) or 0.42),
+                float(current_enr.get("ext_source_1", 0.65) or 0.65),
                 0.01,
+                key=f"ext_1_{nonce}",
                 help="Normalized credit bureau rating score from External Agency 1 (scale 0.0 to 1.0; higher = safer borrower).",
             )
             ext_2 = st.slider(
                 "External Score 2 (EXT_SOURCE_2)",
                 0.0,
                 1.0,
-                float(current_enr.get("ext_source_2", 0.62) or 0.62),
+                float(current_enr.get("ext_source_2", 0.72) or 0.72),
                 0.01,
+                key=f"ext_2_{nonce}",
                 help="Normalized credit bureau rating score from External Agency 2 (scale 0.0 to 1.0; key predictive default signal).",
             )
             ext_3 = st.slider(
                 "External Score 3 (EXT_SOURCE_3)",
                 0.0,
                 1.0,
-                float(current_enr.get("ext_source_3", 0.71) or 0.71),
+                float(current_enr.get("ext_source_3", 0.78) or 0.78),
                 0.01,
+                key=f"ext_3_{nonce}",
                 help="Normalized credit bureau rating score from External Agency 3 (scale 0.0 to 1.0; independent agency metric).",
             )
+            st.caption("ℹ️ Bureau scores (0 to 1): Higher score indicates stronger credit history.")
             
         with bcol2:
             days_id = st.number_input(
                 "Days Since ID Publish",
-                value=float(current_enr.get("days_id_publish", -2500.0)),
+                value=float(current_enr.get("days_id_publish", -3200.0)),
+                key=f"days_id_{nonce}",
                 help="Days elapsed since applicant's national identity document was issued/renewed (negative value relative to application date).",
             )
             days_phone = st.number_input(
                 "Days Since Last Phone Change",
-                value=float(current_enr.get("days_last_phone_change", -300.0)),
+                value=float(current_enr.get("days_last_phone_change", -800.0)),
+                key=f"days_phone_{nonce}",
                 help="Days elapsed since applicant changed their primary contact phone number (higher negative numbers = longer stability).",
             )
             days_reg = st.number_input(
                 "Days Since Registration",
-                value=float(current_enr.get("days_registration", -5000.0)),
+                value=float(current_enr.get("days_registration", -6500.0)),
+                key=f"days_reg_{nonce}",
                 help="Days elapsed since applicant registered their residential address.",
             )
             region_rating = st.selectbox(
                 "Region Rating Client With City",
                 options=[1, 2, 3],
-                index=int(current_enr.get("region_rating_client_w_city", 2)) - 1,
+                index=int(current_enr.get("region_rating_client_w_city", 1)) - 1,
+                key=f"region_rating_{nonce}",
                 help="Regional banking credit risk tier of applicant's city/region (1 = Prime Metropolitan / Lowest Risk, 3 = High Risk / Rural).",
             )
 
@@ -677,30 +729,36 @@ with tab_form:
             bureau_qrt = st.number_input(
                 "Bureau Queries (Quarter)",
                 min_value=0.0,
-                value=float(current_enr.get("credit_bureau_quarter", 1.0)),
+                value=float(current_enr.get("credit_bureau_quarter", 0.0)),
+                key=f"bureau_qrt_{nonce}",
                 help="Number of credit inquiries recorded by credit bureaus for this applicant in the last 3 months.",
             )
             bureau_yr = st.number_input(
                 "Bureau Queries (Year)",
                 min_value=0.0,
-                value=float(current_enr.get("credit_bureau_year", 2.0)),
+                value=float(current_enr.get("credit_bureau_year", 1.0)),
+                key=f"bureau_yr_{nonce}",
                 help="Number of credit inquiries recorded by credit bureaus for this applicant in the last 12 months.",
             )
             def_30 = st.number_input(
                 "Social Circle Def 30 Count",
                 min_value=0.0,
                 value=float(current_enr.get("def_30_cnt_social_circle", 0.0)),
+                key=f"def_30_{nonce}",
                 help="Count of applicant's social contacts/associates who had payment defaults past due by 30+ days.",
             )
             def_60 = st.number_input(
                 "Social Circle Def 60 Count",
                 min_value=0.0,
                 value=float(current_enr.get("def_60_cnt_social_circle", 0.0)),
+                key=f"def_60_{nonce}",
                 help="Count of applicant's social contacts/associates who had payment defaults past due by 60+ days.",
             )
+            st.caption("ℹ️ Social contacts with 30+/60+ days loan default history.")
             flag_doc3 = st.checkbox(
                 "Flag Document 3 Provided",
                 value=bool(current_enr.get("flag_document_3", True)),
+                key=f"flag_doc3_{nonce}",
                 help="KYC verification flag: whether primary national identity proof (Document 3) was submitted.",
             )
 
@@ -760,7 +818,7 @@ with tab_json:
     st.markdown("#### Test or Inspect Raw API Request Payload")
     json_str_input = st.text_area(
         "Request JSON (Pydantic / FastAPI schema)",
-        value=json.dumps(st.session_state.get("current_payload", PRESETS["🟡 Moderate Risk Applicant"]), indent=2),
+        value=json.dumps(st.session_state.get("current_payload", list(PRESETS.values())[0]), indent=2),
         height=380,
         help="Paste a complete JSON payload matching the Pydantic PredictionRequest schema to test the model pipeline.",
     )
@@ -775,15 +833,16 @@ with tab_about:
         """
         ### 📖 AegisFin-AI Architecture Overview (Phase 1 Complete)
         
-        - **Phase 1A Model Engine**: Frozen Gradient Boosted Decision Trees (`XGBoost 3.2.0`) with Scikit-Learn API integration (`credit-xgb-v1.0.0`).
-        - **Phase 1B Probability Calibration**: Sigmoid / Platt Scaling (`credit-calibration-v1.0.0`) fitted via logistic regression over log-odds (`safe_logit`) to produce well-calibrated, monotonic default probabilities.
-        - **Deterministic Risk Policy (`credit-risk-policy-v1.0.0`)**: Backend-governed deterministic risk-band boundaries (provisional technical / demo thresholds; not official banking approval policy):
-          - 🟢 **LOW**: Calibrated PD < 0.15
-          - 🟡 **MODERATE**: 0.15 ≤ Calibrated PD < 0.40
-          - 🟠 **ELEVATED**: 0.40 ≤ Calibrated PD < 0.70
-          - 🔴 **HIGH**: Calibrated PD ≥ 0.70
-        - **Feature Engineering Pipeline**: 
-          - DTI Ratios (`CREDIT_INCOME_RATIO`, `ANNUITY_INCOME_RATIO`, `GOODS_CREDIT_RATIO`)
+        - **Core Model**: Frozen XGBoost Classifier (`models/aegisfin_phase1_final_model.pkl`), selected via rigorous Phase 1A cross-validation and Optuna hyperparameter optimization.
+        - **Probability Calibration**: Phase 1B Platt Scaling (`models/aegisfin_phase1b_calibrated_model.pkl`) mapping raw model margins into statistically grounded, reliable default probabilities.
+        - **Risk Policy Tiering**: Deterministic, rule-based classification using explicit technical thresholds:
+          - 🟢 **LOW RISK**: Calibrated default probability < 15%
+          - 🟡 **MODERATE RISK**: Calibrated default probability 15% to 40%
+          - 🟠 **ELEVATED RISK**: Calibrated default probability 40% to 70%
+          - 🔴 **HIGH RISK**: Calibrated default probability ≥ 70%
+          *(Note: These thresholds are provisional technical demo boundaries, not official banking credit approval/decline rules).*
+        - **Domain Feature Engineering**: 183 input dimensions derived from Home Credit application records, including:
+          - Leverage & Debt Ratios (`PAYMENT_RATE`, `CREDIT_TO_GOODS_RATIO`, `DEBT_TO_INCOME_RATIO`, `ANNUITY_INCOME_PERCENTAGE`)
           - Per-capita Ratios (`INCOME_PER_FAMILY_MEMBER`, `INCOME_PER_CHILD`)
           - Composite Bureau aggregations (`EXT_SOURCE_MEAN`, `EXT_SOURCE_STD`, `EXT_SOURCE_MIN`, `EXT_SOURCE_MAX`)
           - Day count normalization and categorical missing imputation.
@@ -797,10 +856,10 @@ with tab_about:
         | Parameter | Domain | Description & Impact on Underwriting |
         | :--- | :--- | :--- |
         | **Contract Type** | Demographics / Loan | Specifies whether the facility is a lump-sum term loan (*Cash loans*) or a reusable revolving line (*Revolving loans*). |
-        | **Credit Amount** | Financial ($ / ₹) | Total principal amount requested. Higher credit amounts relative to income elevate the Debt-to-Income (DTI) ratio. |
-        | **Loan Annuity** | Financial ($ / ₹) | Periodic repayment obligation (EMI). Used to compute Debt Service Coverage & Annuity Burden (% of monthly earnings). |
-        | **Goods / Asset Price** | Financial ($ / ₹) | Value or purchase price of the underlying asset/goods financed. Determines Loan-to-Value (LTV) coverage. |
-        | **Total Annual Income** | Financial ($ / ₹) | Declared annual gross earnings. Forms the denominator for debt service and per-capita household capacity. |
+        | **Credit Amount** | Financial (₹) | Total principal amount requested. Higher credit amounts relative to income elevate the Debt-to-Income (DTI) ratio. |
+        | **Loan Annuity** | Financial (₹) | Periodic repayment obligation (EMI). Used to compute Debt Service Coverage & Annuity Burden (% of monthly earnings). |
+        | **Goods / Asset Price** | Financial (₹) | Value or purchase price of the underlying asset/goods financed. Determines Loan-to-Value (LTV) coverage. |
+        | **Total Annual Income** | Financial (₹) | Declared annual gross earnings in Indian Rupees (₹). Forms the denominator for debt service and per-capita household capacity. |
         | **Employment Tenure** | Employment | Years spent with current employer. Strong negative correlation with early default risk. |
         | **External Scores (1/2/3)** | Bureau Signal | Normalized credit bureau scores (0.0 to 1.0). Aggregated into statistical mean/dispersion features with high predictive power. |
         | **Social Circle Defaults** | Risk Network | Count of social circle contacts delinquent by 30+ or 60+ days, capturing clustered network risk. |
@@ -859,7 +918,12 @@ if target_request_dict:
     elif prediction_result:
         prob = float(prediction_result.get("default_probability", 0.0))
         pct_prob = prob * 100.0
-        risk_band = str(prediction_result.get("risk_band", "MODERATE")).upper()
+        
+        # Enforce canonical deterministic Phase 1B policy
+        # (< 0.15 = LOW, 0.15 - 0.40 = MODERATE, 0.40 - 0.70 = ELEVATED, >= 0.70 = HIGH)
+        from app.risk_service import classify_risk_band
+        risk_band = classify_risk_band(prob)
+        
         model_version = prediction_result.get("model_version", "credit-xgb-v1.0.0")
         calibration_version = prediction_result.get("calibration_version", "credit-calibration-v1.0.0")
         policy_version = prediction_result.get("policy_version", "credit-risk-policy-v1.0.0")
@@ -871,25 +935,25 @@ if target_request_dict:
                 "badge_class": "risk-low",
                 "label": "LOW RISK BAND",
                 "icon": "🟢",
-                "desc": "Provisional Technical Demo Band: Calibrated default probability < 15%. (Not official banking lending policy).",
+                "desc": "Provisional Technical Demo Band: Calibrated default probability < 15%. Minimal risk of loan delinquency.",
             },
             "MODERATE": {
                 "badge_class": "risk-moderate",
                 "label": "MODERATE RISK BAND",
                 "icon": "🟡",
-                "desc": "Provisional Technical Demo Band: Calibrated default probability 15% - 40%. (Not official banking lending policy).",
+                "desc": "Provisional Technical Demo Band: Calibrated default probability 15% - 40%. Standard applicant risk profile.",
             },
             "ELEVATED": {
                 "badge_class": "risk-elevated",
                 "label": "ELEVATED RISK BAND",
                 "icon": "🟠",
-                "desc": "Provisional Technical Demo Band: Calibrated default probability 40% - 70%. (Not official banking lending policy).",
+                "desc": "Provisional Technical Demo Band: Calibrated default probability 40% - 70%. Heightened leverage or lower bureau signals.",
             },
             "HIGH": {
                 "badge_class": "risk-high",
                 "label": "HIGH RISK BAND",
                 "icon": "🔴",
-                "desc": "Provisional Technical Demo Band: Calibrated default probability ≥ 70%. (Not official banking lending policy).",
+                "desc": "Provisional Technical Demo Band: Calibrated default probability ≥ 70%. Pronounced delinquency markers detected.",
             },
         }
 
@@ -912,11 +976,22 @@ if target_request_dict:
                     <div style="font-size: 11px; font-weight: 500; text-transform: uppercase;">Calibrated Default Probability</div>
                 </div>
             </div>
-            <div style="display: flex; gap: 12px; margin-top: -12px; margin-bottom: 20px; font-size: 12px; color: #64748b; flex-wrap: wrap;">
+            <div style="display: flex; gap: 12px; margin-top: -12px; margin-bottom: 16px; font-size: 12px; color: #64748b; flex-wrap: wrap;">
                 <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px;"><strong>Model:</strong> {model_version}</span>
                 <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px;"><strong>Calibration:</strong> {calibration_version}</span>
                 <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px;"><strong>Risk Policy:</strong> {policy_version}</span>
                 <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px;"><strong>Features:</strong> {feature_count}</span>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px 18px; margin-bottom:20px;">
+                <div style="font-size:13px; font-weight:600; color:#1e293b; margin-bottom:6px;">📖 Understanding Your Assessment Results:</div>
+                <div style="font-size:12px; color:#475569; line-height:1.65;">
+                    • <strong>Calibrated Default Probability ({pct_prob:.2f}%):</strong> The statistically estimated probability that an applicant with these financial attributes will experience a 90+ days payment delinquency over the loan lifecycle.<br>
+                    • <strong>Assigned Risk Band ({risk_label}):</strong> Classified objectively under Phase 1B technical thresholds:<br>
+                      &nbsp;&nbsp;&nbsp;&nbsp;🟢 <em>Low Risk Band (&lt; 15%)</em>: Favorable creditworthiness, high stability, minimal likelihood of default.<br>
+                      &nbsp;&nbsp;&nbsp;&nbsp;🟡 <em>Moderate Risk Band (15% - 40%)</em>: Standard applicant risk; acceptable repayment capacity under standard underwriting.<br>
+                      &nbsp;&nbsp;&nbsp;&nbsp;🟠 <em>Elevated Risk Band (40% - 70%)</em>: Elevated risk signals (e.g. higher debt burden or lower bureau ratings).<br>
+                      &nbsp;&nbsp;&nbsp;&nbsp;🔴 <em>High Risk Band (≥ 70%)</em>: Significant risk indicators; high statistical probability of repayment distress.
+                </div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -946,6 +1021,7 @@ if target_request_dict:
                 f"""<div class="metric-card">
                     <div class="metric-label">Credit / Income (DTI)</div>
                     <div class="metric-val">{dti:.2f}x</div>
+                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Loan to Annual Income<br><strong>(Safer &lt; 2.5x)</strong></div>
                 </div>""",
                 unsafe_allow_html=True,
             )
@@ -954,6 +1030,7 @@ if target_request_dict:
                 f"""<div class="metric-card">
                     <div class="metric-label">Annuity Burden</div>
                     <div class="metric-val">{annuity_burden:.1f}%</div>
+                    <div style="font-size:11px; color:#64748b; margin-top:4px;">EMI % of Annual Income<br><strong>(Safer &lt; 25%)</strong></div>
                 </div>""",
                 unsafe_allow_html=True,
             )
@@ -962,6 +1039,7 @@ if target_request_dict:
                 f"""<div class="metric-card">
                     <div class="metric-label">Loan to Goods Value</div>
                     <div class="metric-val">{ltv:.1f}%</div>
+                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Financing Coverage Ratio<br><strong>(100% = Full Loan)</strong></div>
                 </div>""",
                 unsafe_allow_html=True,
             )
@@ -969,7 +1047,8 @@ if target_request_dict:
             st.markdown(
                 f"""<div class="metric-card">
                     <div class="metric-label">Income / Household</div>
-                    <div class="metric-val">${inc_per_capita:,.0f}</div>
+                    <div class="metric-val">₹{inc_per_capita:,.0f}</div>
+                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Annual Per-Capita Income<br><strong>(Higher is Safer)</strong></div>
                 </div>""",
                 unsafe_allow_html=True,
             )
@@ -978,6 +1057,7 @@ if target_request_dict:
                 f"""<div class="metric-card">
                     <div class="metric-label">Avg Bureau Score</div>
                     <div class="metric-val">{avg_ext:.2f}</div>
+                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Bureau Rating (0 to 1)<br><strong>(Higher is Safer)</strong></div>
                 </div>""",
                 unsafe_allow_html=True,
             )
