@@ -132,7 +132,7 @@ BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = Path(
     os.getenv(
         "AEGISFIN_MODEL_PATH",
-        BASE_DIR / "models" / "aegisfin_phase1_final_model.pkl",
+        BASE_DIR / "models" / "aegisfin_phase1b_calibrated_model.pkl",
     )
 )
 
@@ -273,12 +273,12 @@ PRESETS = {
 # -----------------------------------------------------------------------------
 @st.cache_resource
 def load_local_service():
-    """Loads and caches the Phase1ModelService in memory."""
+    """Loads and caches the Phase1RiskService in memory."""
     try:
-        from app.model_service import Phase1ModelService
+        from app.risk_service import Phase1RiskService
         if not MODEL_PATH.exists():
-            return None, f"Model file not found at {MODEL_PATH}"
-        service = Phase1ModelService(MODEL_PATH)
+            return None, f"Phase 1B model file not found at {MODEL_PATH}"
+        service = Phase1RiskService(MODEL_PATH)
         return service, None
     except Exception as exc:
         return None, str(exc)
@@ -292,8 +292,9 @@ with st.sidebar:
     
     execution_mode = st.radio(
         "Execution Mode",
-        options=["Direct Engine (Local)", "FastAPI Backend (REST)"],
-        help="Direct mode runs predictions directly in Python. REST mode sends requests to the running FastAPI server.",
+        options=["FastAPI Backend (REST)", "Direct Engine (Local)"],
+        index=0,
+        help="REST mode communicates with the FastAPI service (source of truth). Direct mode runs the same canonical risk service locally.",
     )
     
     api_url = "http://127.0.0.1:8000"
@@ -305,7 +306,8 @@ with st.sidebar:
             try:
                 res = requests.get(f"{api_url}/health", timeout=3)
                 if res.status_code == 200:
-                    st.success(f"Connected! Status: {res.json().get('status')}")
+                    health_data = res.json()
+                    st.success(f"Connected! Model: {health_data.get('model_version')} | Cal: {health_data.get('calibration_version')}")
                 else:
                     st.warning(f"API Returned HTTP {res.status_code}")
             except Exception as e:
@@ -332,10 +334,12 @@ with st.sidebar:
         info = service.info()
         st.markdown(
             f"""
-            <div style="background:#e0e7ff; padding:12px; border-radius:10px; font-size:12px; color:#3730a3;">
+            <div style="background:#e0e7ff; padding:12px; border-radius:10px; font-size:12px; color:#3730a3; line-height: 1.5;">
                 <strong>Active Model:</strong> {info['model_name']} ({info['model_version']})<br>
+                <strong>Calibration:</strong> {info.get('calibration_version', 'N/A')}<br>
+                <strong>Risk Policy:</strong> {info.get('policy_version', 'N/A')}<br>
                 <strong>Feature Space:</strong> {info['feature_count']} engineered features<br>
-                <strong>Engine:</strong> XGBoost 3.2.0
+                <strong>Engine:</strong> Frozen XGBoost + Platt Scaling
             </div>
             """,
             unsafe_allow_html=True,
@@ -359,10 +363,10 @@ st.markdown(
     <div class="hero-card">
         <div class="hero-title">
             <span>🛡️ AegisFin-AI</span>
-            <span style="font-size:13px; background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:20px; font-weight:500;">Phase 1 Production Release</span>
+            <span style="font-size:13px; background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:20px; font-weight:500;">Phase 1B Calibrated Release</span>
         </div>
         <p class="hero-subtitle">
-            Next-generation Credit Default Probability & Financial Risk Intelligence Dashboard powered by XGBoost & SHAP Feature Engineering.
+            Next-generation Credit Default Probability & Financial Risk Intelligence Dashboard powered by Calibrated XGBoost & Advanced Feature Engineering.
         </p>
     </div>
     """,
@@ -769,15 +773,22 @@ with tab_json:
 with tab_about:
     st.markdown(
         """
-        ### 📖 AegisFin-AI Architecture Overview
+        ### 📖 AegisFin-AI Architecture Overview (Phase 1 Complete)
         
-        - **Model Engine**: Gradient Boosted Decision Trees (`XGBoost 3.2.0`) with Scikit-Learn API integration.
+        - **Phase 1A Model Engine**: Frozen Gradient Boosted Decision Trees (`XGBoost 3.2.0`) with Scikit-Learn API integration (`credit-xgb-v1.0.0`).
+        - **Phase 1B Probability Calibration**: Sigmoid / Platt Scaling (`credit-calibration-v1.0.0`) fitted via logistic regression over log-odds (`safe_logit`) to produce well-calibrated, monotonic default probabilities.
+        - **Deterministic Risk Policy (`credit-risk-policy-v1.0.0`)**: Backend-governed deterministic risk-band boundaries (provisional technical / demo thresholds; not official banking approval policy):
+          - 🟢 **LOW**: Calibrated PD < 0.15
+          - 🟡 **MODERATE**: 0.15 ≤ Calibrated PD < 0.40
+          - 🟠 **ELEVATED**: 0.40 ≤ Calibrated PD < 0.70
+          - 🔴 **HIGH**: Calibrated PD ≥ 0.70
         - **Feature Engineering Pipeline**: 
           - DTI Ratios (`CREDIT_INCOME_RATIO`, `ANNUITY_INCOME_RATIO`, `GOODS_CREDIT_RATIO`)
           - Per-capita Ratios (`INCOME_PER_FAMILY_MEMBER`, `INCOME_PER_CHILD`)
           - Composite Bureau aggregations (`EXT_SOURCE_MEAN`, `EXT_SOURCE_STD`, `EXT_SOURCE_MIN`, `EXT_SOURCE_MAX`)
           - Day count normalization and categorical missing imputation.
         - **Schema Design**: Two-tier ingestion separating clean customer self-reported attributes from institutional enrichment records.
+        - **Future Phases**: Model Explainability (SHAP) is planned for future Phase 3.
         
         ---
         
@@ -827,16 +838,9 @@ if target_request_dict:
                 
                 srv, srv_err = load_local_service()
                 if srv is None:
-                    error_msg = f"Failed to load model service: {srv_err}"
+                    error_msg = f"Failed to load risk service: {srv_err}"
                 else:
-                    prob = srv.predict_probability(df_raw)
-                    info = srv.info()
-                    prediction_result = {
-                        "default_probability": prob,
-                        "model": info["model_name"],
-                        "model_version": info["model_version"],
-                        "feature_count": info["feature_count"],
-                    }
+                    prediction_result = srv.predict_risk(df_raw)
             except Exception as exc:
                 error_msg = f"Direct execution error: {exc}"
                 
@@ -855,28 +859,45 @@ if target_request_dict:
     elif prediction_result:
         prob = float(prediction_result.get("default_probability", 0.0))
         pct_prob = prob * 100.0
+        risk_band = str(prediction_result.get("risk_band", "MODERATE")).upper()
+        model_version = prediction_result.get("model_version", "credit-xgb-v1.0.0")
+        calibration_version = prediction_result.get("calibration_version", "credit-calibration-v1.0.0")
+        policy_version = prediction_result.get("policy_version", "credit-risk-policy-v1.0.0")
+        feature_count = prediction_result.get("feature_count", 183)
         
-        # Determine risk classification
-        if pct_prob < 15.0:
-            badge_class = "risk-low"
-            risk_label = "LOW DEFAULT RISK — HIGH APPROVAL CONFIDENCE"
-            risk_icon = "🟢"
-            risk_desc = "Strong financial health, positive bureau indicators, and conservative debt obligations."
-        elif pct_prob < 40.0:
-            badge_class = "risk-moderate"
-            risk_label = "MODERATE RISK — STANDARD UNDERWRITING"
-            risk_icon = "🟡"
-            risk_desc = "Balanced profile with acceptable debt service capacity. Standard terms recommended."
-        elif pct_prob < 70.0:
-            badge_class = "risk-elevated"
-            risk_label = "ELEVATED RISK — CONDITIONAL APPROVAL"
-            risk_icon = "🟠"
-            risk_desc = "Elevated risk profile. Consider requesting additional collateral, co-signers, or lower loan amount."
-        else:
-            badge_class = "risk-high"
-            risk_label = "HIGH RISK — CAUTION / POLICY DECLINE"
-            risk_icon = "🔴"
-            risk_desc = "Significant indicators of default likelihood based on historical credit trends."
+        # Display styling configuration for backend deterministic risk band (provisional technical thresholds)
+        BAND_CONFIG = {
+            "LOW": {
+                "badge_class": "risk-low",
+                "label": "LOW RISK BAND",
+                "icon": "🟢",
+                "desc": "Provisional Technical Demo Band: Calibrated default probability < 15%. (Not official banking lending policy).",
+            },
+            "MODERATE": {
+                "badge_class": "risk-moderate",
+                "label": "MODERATE RISK BAND",
+                "icon": "🟡",
+                "desc": "Provisional Technical Demo Band: Calibrated default probability 15% - 40%. (Not official banking lending policy).",
+            },
+            "ELEVATED": {
+                "badge_class": "risk-elevated",
+                "label": "ELEVATED RISK BAND",
+                "icon": "🟠",
+                "desc": "Provisional Technical Demo Band: Calibrated default probability 40% - 70%. (Not official banking lending policy).",
+            },
+            "HIGH": {
+                "badge_class": "risk-high",
+                "label": "HIGH RISK BAND",
+                "icon": "🔴",
+                "desc": "Provisional Technical Demo Band: Calibrated default probability ≥ 70%. (Not official banking lending policy).",
+            },
+        }
+
+        band_info = BAND_CONFIG.get(risk_band, BAND_CONFIG["MODERATE"])
+        badge_class = band_info["badge_class"]
+        risk_label = band_info["label"]
+        risk_icon = band_info["icon"]
+        risk_desc = band_info["desc"]
 
         # Risk Banner
         st.markdown(
@@ -888,8 +909,14 @@ if target_request_dict:
                 </div>
                 <div style="font-size: 32px; font-weight: 800; text-align: right;">
                     {pct_prob:.2f}%
-                    <div style="font-size: 11px; font-weight: 500; text-transform: uppercase;">Default Probability</div>
+                    <div style="font-size: 11px; font-weight: 500; text-transform: uppercase;">Calibrated Default Probability</div>
                 </div>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: -12px; margin-bottom: 20px; font-size: 12px; color: #64748b; flex-wrap: wrap;">
+                <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px;"><strong>Model:</strong> {model_version}</span>
+                <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px;"><strong>Calibration:</strong> {calibration_version}</span>
+                <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px;"><strong>Risk Policy:</strong> {policy_version}</span>
+                <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px;"><strong>Features:</strong> {feature_count}</span>
             </div>
             """,
             unsafe_allow_html=True,
@@ -996,8 +1023,9 @@ if target_request_dict:
             
             # Download report button
             report_data = {
-                "assessment_id": "AEGIS-PHASE1-DEMO",
+                "assessment_id": "AEGIS-PHASE1B-DEMO",
                 "default_probability": prob,
+                "risk_band": risk_band,
                 "risk_category": risk_label,
                 "model_metadata": prediction_result,
                 "input_data": target_request_dict,

@@ -126,8 +126,18 @@ class PredictionRequest(BaseModel):
     raw_overrides: Dict[str, Any] = Field(default_factory=dict)
 
 
+from typing import Literal
+
 class PredictionResponse(BaseModel):
-    default_probability: float
-    model: str
-    model_version: str
-    feature_count: int
+    default_probability: float = Field(..., ge=0.0, le=1.0, description="Calibrated default probability")
+    risk_band: Literal["LOW", "MODERATE", "ELEVATED", "HIGH"] = Field(..., description="Deterministic risk band")
+    model_name: str = Field(..., description="Base model family")
+    model_version: str = Field(..., description="Base model version")
+    calibration_version: str = Field(..., description="Probability calibration version")
+    policy_version: str = Field(..., description="Deterministic risk policy version")
+    feature_count: int = Field(..., description="Number of engineered features in model")
+    
+    # Backwards compatibility and technical audit fields
+    model: Optional[str] = Field(None, description="Alias for model_name")
+    raw_probability: Optional[float] = Field(None, description="Uncalibrated raw XGBoost probability")
+    calibration_method: Optional[str] = Field(None, description="Calibration algorithm")
