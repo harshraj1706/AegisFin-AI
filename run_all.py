@@ -28,8 +28,18 @@ BASE_DIR = Path(__file__).resolve().parent
 
 
 def run_streamlit():
-    print("🚀 Launching AegisFin-AI Streamlit Web Application...")
-    cmd = [sys.executable, "-m", "streamlit", "run", str(BASE_DIR / "streamlit_app.py")]
+    print("🚀 Launching AegisFin-AI Streamlit Web Application (http://localhost:8501)...")
+    cmd = [
+        sys.executable,
+        "-m",
+        "streamlit",
+        "run",
+        str(BASE_DIR / "streamlit_app.py"),
+        "--server.address",
+        "127.0.0.1",
+        "--server.port",
+        "8501",
+    ]
     subprocess.run(cmd, cwd=str(BASE_DIR))
 
 
@@ -61,7 +71,17 @@ def run_all():
         "--port",
         "8000",
     ]
-    ui_cmd = [sys.executable, "-m", "streamlit", "run", str(BASE_DIR / "streamlit_app.py")]
+    ui_cmd = [
+        sys.executable,
+        "-m",
+        "streamlit",
+        "run",
+        str(BASE_DIR / "streamlit_app.py"),
+        "--server.address",
+        "127.0.0.1",
+        "--server.port",
+        "8501",
+    ]
 
     p_api = subprocess.Popen(api_cmd, cwd=str(BASE_DIR))
     time.sleep(2)

@@ -1,0 +1,305 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AegisFin Phase 2 Production Fraud Feature Schema",
+  "version": "2.0.0",
+  "description": "Production-compatible feature engineering specification for AegisFin Phase 2 Fraud Detection. Eliminates legacy anonymous IEEE-CIS V-features and establishes an authentic, reproducible schema combining live transaction attributes and Supabase entity history.",
+  "metadata": {
+    "benchmark_champion_total_features": 459,
+    "audit_breakdown": {
+      "Category_A_direct_inputs": {
+        "count": 22,
+        "percentage": 4.79,
+        "cumulative_tree_importance_pct": 3.08,
+        "status": "Production Compatible"
+      },
+      "Category_B_derivable_history": {
+        "count": 15,
+        "percentage": 3.27,
+        "cumulative_tree_importance_pct": 1.37,
+        "status": "Production Compatible"
+      },
+      "Category_C_future_fields": {
+        "count": 31,
+        "percentage": 6.75,
+        "cumulative_tree_importance_pct": 4.29,
+        "status": "Pending Upstream Enrichment"
+      },
+      "Category_D_impossible_unreliable": {
+        "count": 391,
+        "percentage": 85.19,
+        "cumulative_tree_importance_pct": 91.26,
+        "status": "Excluded from Production (Anonymous V/C/M/id features)"
+      }
+    },
+    "recommended_production_feature_count": 66,
+    "anti_leakage_guarantee": "Strict point-in-time filtering: transaction_timestamp < current_transaction_timestamp enforced on all historical queries."
+  },
+  "raw_input_fields": [
+    {
+      "name": "transaction_id",
+      "type": "string",
+      "required": true,
+      "description": "Globally unique payment transaction reference identifier."
+    },
+    {
+      "name": "amount",
+      "type": "number",
+      "required": true,
+      "minimum": 0.0,
+      "description": "Transaction monetary value in USD."
+    },
+    {
+      "name": "transaction_timestamp",
+      "type": "string",
+      "format": "date-time",
+      "required": false,
+      "default": "current_utc_time",
+      "description": "ISO-8601 UTC timestamp of the transaction event."
+    },
+    {
+      "name": "customer_id",
+      "type": "string",
+      "required": true,
+      "description": "Unique identifier of the account holder or customer."
+    },
+    {
+      "name": "card_id",
+      "type": "string",
+      "required": true,
+      "description": "Payment card reference / card1 token identifier."
+    },
+    {
+      "name": "device_id",
+      "type": "string",
+      "required": false,
+      "description": "Client hardware fingerprint or device ID string."
+    },
+    {
+      "name": "merchant_id",
+      "type": "string",
+      "required": false,
+      "description": "Merchant or POS terminal reference identifier."
+    },
+    {
+      "name": "product_code",
+      "type": "string",
+      "enum": ["W", "H", "C", "S", "R"],
+      "default": "W",
+      "description": "Transaction category product code (W=Web, H=Home, C=Commercial, S=Specialty, R=Retail)."
+    },
+    {
+      "name": "card_network",
+      "type": "string",
+      "enum": ["visa", "mastercard", "discover", "american express"],
+      "default": "visa",
+      "description": "Card payment network scheme."
+    },
+    {
+      "name": "card_type",
+      "type": "string",
+      "enum": ["debit", "credit"],
+      "default": "debit",
+      "description": "Card funding type."
+    },
+    {
+      "name": "email_domain",
+      "type": "string",
+      "required": false,
+      "description": "Purchaser email domain (e.g. gmail.com, protonmail.com)."
+    },
+    {
+      "name": "address_id",
+      "type": "string",
+      "required": false,
+      "description": "Billing zip code or address identifier (addr1)."
+    },
+    {
+      "name": "ip_address",
+      "type": "string",
+      "required": false,
+      "description": "Client IPv4 or IPv6 address initiating transaction."
+    },
+    {
+      "name": "country",
+      "type": "string",
+      "required": false,
+      "description": "Two-letter ISO country code of transaction origin."
+    }
+  ],
+  "production_feature_groups": {
+    "group_1_direct_transaction_features": {
+      "group_name": "Direct Transaction Features",
+      "features": [
+        {"name": "amount", "type": "float", "source": "raw_input", "formula": "amount"},
+        {"name": "product_code_freq", "type": "float", "source": "precomputed_map", "formula": "frequency_map[product_code]"},
+        {"name": "card_network_freq", "type": "float", "source": "precomputed_map", "formula": "frequency_map[card_network]"},
+        {"name": "card_type_freq", "type": "float", "source": "precomputed_map", "formula": "frequency_map[card_type]"},
+        {"name": "email_domain_freq", "type": "float", "source": "precomputed_map", "formula": "frequency_map[email_domain]"},
+        {"name": "address_id_numeric", "type": "float", "source": "raw_input", "formula": "float(address_id)"},
+        {"name": "country_freq", "type": "float", "source": "precomputed_map", "formula": "frequency_map[country]"},
+        {"name": "missing_fields_count", "type": "float", "source": "raw_input", "formula": "count(null_optional_fields)"}
+      ]
+    },
+    "group_2_time_features": {
+      "group_name": "Time & Calendar Features",
+      "features": [
+        {"name": "hour", "type": "float", "source": "raw_input", "formula": "dt.hour"},
+        {"name": "weekday_index", "type": "float", "source": "raw_input", "formula": "dt.weekday()"},
+        {"name": "is_weekend", "type": "float", "source": "raw_input", "formula": "1.0 if weekday in (5,6) else 0.0"},
+        {"name": "is_night", "type": "float", "source": "raw_input", "formula": "1.0 if hour < 6 else 0.0"},
+        {"name": "day_of_year", "type": "float", "source": "raw_input", "formula": "dt.timetuple().tm_yday"},
+        {"name": "time_since_midnight_sec", "type": "float", "source": "raw_input", "formula": "hour * 3600 + minute * 60 + second"}
+      ]
+    },
+    "group_3_amount_features": {
+      "group_name": "Amount Transformation Features",
+      "features": [
+        {"name": "amount_log", "type": "float", "source": "raw_input", "formula": "log1p(amount)"},
+        {"name": "amount_cents", "type": "float", "source": "raw_input", "formula": "round(amount % 1, 2)"},
+        {"name": "is_round_amount", "type": "float", "source": "raw_input", "formula": "1.0 if amount >= 10 and amount % 10 == 0 else 0.0"},
+        {"name": "is_zero_cents", "type": "float", "source": "raw_input", "formula": "1.0 if (amount % 1) == 0.0 else 0.0"}
+      ]
+    },
+    "group_4_customer_behavior": {
+      "group_name": "Customer Behavioral Aggregates (Strict Anti-Leakage: t < t_curr)",
+      "features": [
+        {"name": "customer_tx_count_5m", "type": "float", "source": "supabase_history", "formula": "COUNT(*) customer_id=curr AND t in (t_curr - 5m, t_curr)"},
+        {"name": "customer_tx_count_1h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) customer_id=curr AND t in (t_curr - 1h, t_curr)"},
+        {"name": "customer_tx_count_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) customer_id=curr AND t in (t_curr - 24h, t_curr)"},
+        {"name": "customer_amount_mean", "type": "float", "source": "supabase_history", "formula": "AVG(amount) customer_id=curr AND t < t_curr"},
+        {"name": "customer_amount_std", "type": "float", "source": "supabase_history", "formula": "STDDEV(amount) customer_id=curr AND t < t_curr"},
+        {"name": "customer_amount_zscore", "type": "float", "source": "supabase_history", "formula": "(amount - mean) / (std + 1e-5)"},
+        {"name": "customer_amount_ratio", "type": "float", "source": "supabase_history", "formula": "amount / (mean + 1e-5)"},
+        {"name": "customer_is_new", "type": "float", "source": "supabase_history", "formula": "1.0 if customer_past_count == 0 else 0.0"},
+        {"name": "customer_unique_merchants_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(DISTINCT merchant_id) in 24h"},
+        {"name": "customer_unique_devices_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(DISTINCT device_id) in 24h"}
+      ]
+    },
+    "group_5_card_behavior": {
+      "group_name": "Card Behavioral Aggregates (Strict Anti-Leakage: t < t_curr)",
+      "features": [
+        {"name": "card_tx_count_5m", "type": "float", "source": "supabase_history", "formula": "COUNT(*) card_id=curr in 5m"},
+        {"name": "card_tx_count_1h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) card_id=curr in 1h"},
+        {"name": "card_tx_count_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) card_id=curr in 24h"},
+        {"name": "card_amount_mean", "type": "float", "source": "supabase_history", "formula": "AVG(amount) card_id=curr AND t < t_curr"},
+        {"name": "card_amount_std", "type": "float", "source": "supabase_history", "formula": "STDDEV(amount) card_id=curr AND t < t_curr"},
+        {"name": "card_amount_ratio", "type": "float", "source": "supabase_history", "formula": "amount / (card_mean + 1e-5)"},
+        {"name": "card_is_new", "type": "float", "source": "supabase_history", "formula": "1.0 if card_past_count == 0 else 0.0"}
+      ]
+    },
+    "group_6_device_behavior": {
+      "group_name": "Device Fingerprint Aggregates (Strict Anti-Leakage: t < t_curr)",
+      "features": [
+        {"name": "device_tx_count_5m", "type": "float", "source": "supabase_history", "formula": "COUNT(*) device_id=curr in 5m"},
+        {"name": "device_tx_count_1h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) device_id=curr in 1h"},
+        {"name": "device_tx_count_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) device_id=curr in 24h"},
+        {"name": "device_unique_customers_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(DISTINCT customer_id) on device in 24h"},
+        {"name": "device_unique_cards_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(DISTINCT card_id) on device in 24h"},
+        {"name": "device_is_new", "type": "float", "source": "supabase_history", "formula": "1.0 if device_past_count == 0 else 0.0"}
+      ]
+    },
+    "group_7_merchant_behavior": {
+      "group_name": "Merchant Risk & Pairing Aggregates (Strict Anti-Leakage: t < t_curr)",
+      "features": [
+        {"name": "merchant_tx_count_1h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) merchant_id=curr in 1h"},
+        {"name": "merchant_tx_count_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) merchant_id=curr in 24h"},
+        {"name": "merchant_amount_mean", "type": "float", "source": "supabase_history", "formula": "AVG(amount) merchant_id=curr AND t < t_curr"},
+        {"name": "merchant_amount_std", "type": "float", "source": "supabase_history", "formula": "STDDEV(amount) merchant_id=curr AND t < t_curr"},
+        {"name": "customer_merchant_tx_count", "type": "float", "source": "supabase_history", "formula": "COUNT(*) customer_id=curr AND merchant_id=curr AND t < t_curr"},
+        {"name": "customer_merchant_is_new", "type": "float", "source": "supabase_history", "formula": "1.0 if customer_merchant_tx_count == 0 else 0.0"}
+      ]
+    },
+    "group_8_ip_behavior": {
+      "group_name": "Client IP Network Aggregates (Strict Anti-Leakage: t < t_curr)",
+      "features": [
+        {"name": "ip_tx_count_5m", "type": "float", "source": "supabase_history", "formula": "COUNT(*) ip_address=curr in 5m"},
+        {"name": "ip_tx_count_1h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) ip_address=curr in 1h"},
+        {"name": "ip_tx_count_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) ip_address=curr in 24h"},
+        {"name": "ip_unique_customers_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(DISTINCT customer_id) from IP in 24h"},
+        {"name": "ip_unique_cards_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(DISTINCT card_id) from IP in 24h"},
+        {"name": "ip_unique_devices_24h", "type": "float", "source": "supabase_history", "formula": "COUNT(DISTINCT device_id) from IP in 24h"},
+        {"name": "ip_is_new", "type": "float", "source": "supabase_history", "formula": "1.0 if ip_past_count == 0 else 0.0"}
+      ]
+    },
+    "group_9_cross_entity_features": {
+      "group_name": "Cross-Entity Relationship & Association Features",
+      "features": [
+        {"name": "customer_device_seen_before", "type": "float", "source": "supabase_history", "formula": "1.0 if (customer, device) seen prior else 0.0"},
+        {"name": "customer_card_seen_before", "type": "float", "source": "supabase_history", "formula": "1.0 if (customer, card) seen prior else 0.0"},
+        {"name": "customer_merchant_seen_before", "type": "float", "source": "supabase_history", "formula": "1.0 if (customer, merchant) seen prior else 0.0"},
+        {"name": "customer_ip_seen_before", "type": "float", "source": "supabase_history", "formula": "1.0 if (customer, ip) seen prior else 0.0"},
+        {"name": "card_device_seen_before", "type": "float", "source": "supabase_history", "formula": "1.0 if (card, device) seen prior else 0.0"},
+        {"name": "card_ip_seen_before", "type": "float", "source": "supabase_history", "formula": "1.0 if (card, ip) seen prior else 0.0"}
+      ]
+    },
+    "group_10_velocity_features": {
+      "group_name": "Transaction Velocity & Burst Features",
+      "features": [
+        {"name": "rapid_transaction_flag", "type": "float", "source": "supabase_history", "formula": "1.0 if seconds_since_last_customer_tx <= 60 else 0.0"},
+        {"name": "transactions_last_5m", "type": "float", "source": "supabase_history", "formula": "COUNT(*) across customer/card in 5m"},
+        {"name": "transactions_last_15m", "type": "float", "source": "supabase_history", "formula": "COUNT(*) across customer/card in 15m"},
+        {"name": "transactions_last_1h", "type": "float", "source": "supabase_history", "formula": "COUNT(*) across customer/card in 1h"},
+        {"name": "amount_sum_last_1h", "type": "float", "source": "supabase_history", "formula": "SUM(amount) on customer in last 1h"},
+        {"name": "amount_sum_last_24h", "type": "float", "source": "supabase_history", "formula": "SUM(amount) on customer in last 24h"}
+      ]
+    }
+  },
+  "user_facing_risk_signals": [
+    {
+      "signal_id": "SIG_NEW_DEVICE",
+      "name": "New Device Detected",
+      "condition": "device_is_new == 1.0 or customer_device_seen_before == 0.0",
+      "severity": "MEDIUM",
+      "alert_text": "First transaction observed on this hardware fingerprint for this customer."
+    },
+    {
+      "signal_id": "SIG_NEW_IP",
+      "name": "New IP Address Detected",
+      "condition": "ip_is_new == 1.0 or customer_ip_seen_before == 0.0",
+      "severity": "LOW",
+      "alert_text": "Transaction originated from a previously unseen IP address."
+    },
+    {
+      "signal_id": "SIG_UNUSUAL_AMOUNT",
+      "name": "Unusual Transaction Amount",
+      "condition": "customer_amount_zscore > 3.0 or customer_amount_ratio > 4.0",
+      "severity": "HIGH",
+      "alert_text": "Amount deviates by more than 3 standard deviations from customer historical average."
+    },
+    {
+      "signal_id": "SIG_RAPID_VELOCITY",
+      "name": "High Transaction Velocity",
+      "condition": "rapid_transaction_flag == 1.0 or customer_tx_count_5m >= 3",
+      "severity": "HIGH",
+      "alert_text": "Multiple transactions initiated in rapid succession (< 5 minutes)."
+    },
+    {
+      "signal_id": "SIG_DEVICE_SHARING",
+      "name": "Device Shared Across Multiple Customers",
+      "condition": "device_unique_customers_24h >= 3",
+      "severity": "CRITICAL",
+      "alert_text": "Hardware device has been utilized by 3 or more distinct customer accounts in 24 hours."
+    },
+    {
+      "signal_id": "SIG_IP_SHARING",
+      "name": "Suspicious IP Clustering",
+      "condition": "ip_unique_cards_24h >= 4",
+      "severity": "HIGH",
+      "alert_text": "IP address associated with 4 or more distinct payment cards within 24 hours."
+    },
+    {
+      "signal_id": "SIG_NEW_MERCHANT",
+      "name": "New Merchant Interaction",
+      "condition": "customer_merchant_is_new == 1.0 and amount >= 500.0",
+      "severity": "MEDIUM",
+      "alert_text": "First transaction at this merchant above $500 threshold."
+    },
+    {
+      "signal_id": "SIG_BURST_SPEND",
+      "name": "Hourly Spend Surge",
+      "condition": "amount_sum_last_1h >= 2000.0 and customer_amount_mean < 500.0",
+      "severity": "HIGH",
+      "alert_text": "Cumulative 1-hour spend exceeds $2,000 against a historical average below $500."
+    }
+  ]
+}

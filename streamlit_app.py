@@ -13,10 +13,14 @@ from typing import Any, Dict, Optional
 import pandas as pd
 import requests
 import streamlit as st
+from supabase import create_client, Client
+
+from app.config import SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, API_BASE_URL
+from app.streamlit_fraud_view import render_fraud_detection_page
 
 # Set page config with modern wide layout and custom title
 st.set_page_config(
-    page_title="AegisFin-AI | Credit Default Risk Assessment",
+    page_title="AegisFin-AI | Risk & Fraud Intelligence",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -285,81 +289,353 @@ def load_local_service():
 
 
 # -----------------------------------------------------------------------------
-# 3. SIDEBAR CONTROLS & BACKEND INTEGRATION
+# 2.5 SUPABASE AUTHENTICATION & SESSION GATEKEEPER
 # -----------------------------------------------------------------------------
-with st.sidebar:
-    st.markdown("### ⚙️ Engine & Integration")
-    
-    execution_mode = st.radio(
-        "Execution Mode",
-        options=["FastAPI Backend (REST)", "Direct Engine (Local)"],
-        index=0,
-        help="REST mode communicates with the FastAPI service (source of truth). Direct mode runs the same canonical risk service locally.",
-    )
-    
-    api_url = "http://127.0.0.1:8000"
-    if execution_mode == "FastAPI Backend (REST)":
-        api_url = st.text_input("FastAPI Base URL", value="http://127.0.0.1:8000")
-        
-        # Test Connection button
-        if st.button("📡 Check API Health", use_container_width=True):
-            try:
-                res = requests.get(f"{api_url}/health", timeout=3)
-                if res.status_code == 200:
-                    health_data = res.json()
-                    st.success(f"Connected! Model: {health_data.get('model_version')} | Cal: {health_data.get('calibration_version')}")
-                else:
-                    st.warning(f"API Returned HTTP {res.status_code}")
-            except Exception as e:
-                st.error(f"Failed to reach API: {e}")
-    
-    st.markdown("---")
-    st.markdown("### 📦 Quick Scenario Presets")
-    
-    preset_names = list(PRESETS.keys())
-    
-    def on_preset_select():
-        sel = st.session_state.get("preset_dropdown_selector")
-        if sel and sel in PRESETS:
-            st.session_state["current_payload"] = PRESETS[sel]
-            st.session_state["preset_nonce"] = st.session_state.get("preset_nonce", 0) + 1
+@st.cache_resource
+def get_supabase_frontend_client() -> Optional[Client]:
+    """Provides a cached Supabase client using the safe publishable key."""
+    if not SUPABASE_URL or not SUPABASE_PUBLISHABLE_KEY:
+        return None
+    try:
+        return create_client(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+    except Exception:
+        return None
 
-    selected_preset_name = st.selectbox(
-        "Load Preset Profile",
-        options=preset_names,
-        index=0,
-        key="preset_dropdown_selector",
-        on_change=on_preset_select,
-        help="Select a benchmark profile to instantly load its financial parameters into the assessment form.",
-    )
-    
-    if st.button("⚡ Apply Preset to Form", use_container_width=True):
-        cur_sel = st.session_state.get("preset_dropdown_selector", selected_preset_name)
-        preset_data = PRESETS[cur_sel]
-        st.session_state["current_payload"] = preset_data
-        st.session_state["preset_nonce"] = st.session_state.get("preset_nonce", 0) + 1
-        st.success(f"Loaded '{cur_sel}'!")
-        st.rerun()
 
-    st.markdown("---")
-    # Model info card
-    service, service_err = load_local_service()
-    if service:
-        info = service.info()
+# Initialize session state credentials
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+    st.session_state["access_token"] = None
+    st.session_state["user"] = None
+
+# Unauthenticated Gatekeeper: redirect and block access until logged in
+if not st.session_state.get("authenticated", False):
+    st.markdown(
+        """
+        <div style="text-align: center; margin-top: 25px; margin-bottom: 24px;">
+            <div style="display:inline-flex; align-items:center; gap:10px; margin-bottom:8px;">
+                <span style="font-size: 36px;">🛡️</span>
+                <span style="font-size: 30px; font-weight: 800; color: #1e1b4b; letter-spacing: -0.5px;">AegisFin-AI</span>
+            </div>
+            <p style="color: #64748b; font-size: 14px; margin: 0; font-weight: 500;">
+                Institutional Financial Intelligence & Credit Risk Assessment Platform
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col_l, col_center, col_r = st.columns([1, 2, 1])
+    with col_center:
         st.markdown(
-            f"""
-            <div style="background:#e0e7ff; padding:12px; border-radius:10px; font-size:12px; color:#3730a3; line-height: 1.5;">
-                <strong>Active Model:</strong> {info['model_name']} ({info['model_version']})<br>
-                <strong>Calibration:</strong> {info.get('calibration_version', 'N/A')}<br>
-                <strong>Risk Policy:</strong> {info.get('policy_version', 'N/A')}<br>
-                <strong>Feature Space:</strong> {info['feature_count']} engineered features<br>
-                <strong>Engine:</strong> Frozen XGBoost + Platt Scaling
+            """
+            <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 22px 24px; border-radius: 14px 14px 0 0; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #a5b4fc; font-weight: 600; margin-bottom: 4px;">Security Gatekeeper</div>
+                <h3 style="margin: 0; font-size: 20px; font-weight: 700;">Analyst Portal Authentication</h3>
+                <p style="margin: 6px 0 0 0; font-size: 12px; color: #c7d2fe; opacity: 0.9;">Supabase Auth • RBAC Protection • Session Persistence</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
-    elif service_err:
-        st.warning(f"Local Model Notice: {service_err}")
+
+        tab_login, tab_signup = st.tabs(["🔐 Sign In", "📝 Create Account"])
+
+        with tab_login:
+            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+            login_email = st.text_input("Analyst Email", key="auth_login_email", placeholder="analyst@example.com")
+            login_pwd = st.text_input("Password", type="password", key="auth_login_pwd", placeholder="••••••••")
+
+            if st.button("🚀 Sign In to AegisFin", type="primary", use_container_width=True, key="btn_signin"):
+                if not login_email or not login_pwd:
+                    st.error("Please enter both email and password.")
+                else:
+                    with st.spinner("Verifying credentials with Supabase..."):
+                        success = False
+                        err_msg = ""
+                        client = get_supabase_frontend_client()
+
+                        # 1. Direct Supabase client sign in with publishable key
+                        if client:
+                            try:
+                                res = client.auth.sign_in_with_password({
+                                    "email": login_email.strip(),
+                                    "password": login_pwd,
+                                })
+                                if res and res.session:
+                                    st.session_state["authenticated"] = True
+                                    st.session_state["access_token"] = res.session.access_token
+                                    user_meta = res.user.user_metadata or {}
+                                    st.session_state["user"] = {
+                                        "user_id": str(res.user.id),
+                                        "email": res.user.email,
+                                        "full_name": user_meta.get("full_name") or login_email.split("@")[0].capitalize(),
+                                        "role": "analyst",
+                                    }
+                                    success = True
+                            except Exception as exc:
+                                err_msg = str(exc)
+
+                        # 2. Fallback via backend FastAPI /api/v1/auth/login
+                        if not success:
+                            try:
+                                api_res = requests.post(
+                                    f"{API_BASE_URL.rstrip('/')}/api/v1/auth/login",
+                                    json={"email": login_email.strip(), "password": login_pwd},
+                                    timeout=6,
+                                )
+                                if api_res.status_code == 200:
+                                    data = api_res.json()
+                                    st.session_state["authenticated"] = True
+                                    st.session_state["access_token"] = data["access_token"]
+                                    st.session_state["user"] = {
+                                        "user_id": data["user_id"],
+                                        "email": data["email"],
+                                        "full_name": data.get("full_name"),
+                                        "role": data.get("role", "analyst"),
+                                    }
+                                    success = True
+                                else:
+                                    err_msg = api_res.json().get("detail", "Invalid email or password.")
+                            except Exception as exc:
+                                if not err_msg:
+                                    err_msg = str(exc)
+
+                        if success:
+                            st.success("✅ Access Granted! Loading workspace...")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Access Denied: {err_msg}")
+
+        with tab_signup:
+            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+            signup_name = st.text_input("Full Name", key="auth_signup_name", placeholder="Jane Doe")
+            signup_email = st.text_input("Work Email", key="auth_signup_email", placeholder="jane@company.com")
+            signup_pwd = st.text_input("Password", type="password", key="auth_signup_pwd", placeholder="Minimum 6 characters")
+
+            if st.button("✨ Create Analyst Account", type="primary", use_container_width=True, key="btn_signup"):
+                if not signup_email or not signup_pwd:
+                    st.error("Please provide both email and password.")
+                elif len(signup_pwd) < 6:
+                    st.error("Password must be at least 6 characters.")
+                else:
+                    with st.spinner("Provisioning user & public.profiles in Supabase..."):
+                        try:
+                            signup_resp = requests.post(
+                                f"{API_BASE_URL.rstrip('/')}/api/v1/auth/signup",
+                                json={
+                                    "email": signup_email.strip(),
+                                    "password": signup_pwd,
+                                    "full_name": signup_name.strip() if signup_name else None,
+                                },
+                                timeout=10,
+                            )
+                            if signup_resp.status_code in (200, 201):
+                                # Auto-login immediately upon creation
+                                login_resp = requests.post(
+                                    f"{API_BASE_URL.rstrip('/')}/api/v1/auth/login",
+                                    json={"email": signup_email.strip(), "password": signup_pwd},
+                                    timeout=6,
+                                )
+                                if login_resp.status_code == 200:
+                                    login_data = login_resp.json()
+                                    st.session_state["authenticated"] = True
+                                    st.session_state["access_token"] = login_data["access_token"]
+                                    st.session_state["user"] = {
+                                        "user_id": login_data["user_id"],
+                                        "email": login_data["email"],
+                                        "full_name": login_data.get("full_name") or signup_name or "Analyst",
+                                        "role": login_data.get("role", "analyst"),
+                                    }
+                                    st.success("🎉 Account created and profile provisioned! Entering workspace...")
+                                    st.rerun()
+                                else:
+                                    st.success("✅ Account created successfully! Please sign in using the Sign In tab.")
+                            else:
+                                err_detail = signup_resp.json().get("detail", signup_resp.text)
+                                st.error(f"❌ Registration Failed: {err_detail}")
+                        except Exception as exc:
+                            st.error(f"❌ Could not connect to backend for signup: {exc}")
+
+    with st.sidebar:
+        st.markdown("### 🔒 AegisFin Access Portal")
+        st.info("Please sign in or create an account to unlock the credit risk modeling workspace.")
+
+    st.stop()
+
+
+# -----------------------------------------------------------------------------
+# 3. SIDEBAR CONTROLS & BACKEND INTEGRATION
+# -----------------------------------------------------------------------------
+with st.sidebar:
+    # Authenticated User Badge & Logout
+    user_info = st.session_state.get("user") or {}
+    user_name = user_info.get("full_name") or "Risk Analyst"
+    user_email = user_info.get("email") or ""
+    user_role = user_info.get("role", "analyst").capitalize()
+
+    st.markdown(
+        f"""
+        <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 14px 16px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 600;">Authenticated Analyst</div>
+            <div style="font-size: 15px; font-weight: 700; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">👤 {user_name}</div>
+            <div style="font-size: 11px; color: #cbd5e1; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{user_email}</div>
+            <div style="margin-top: 8px; display: inline-block; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(165, 180, 252, 0.3); padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; color: #c7d2fe;">
+                🛡️ {user_role}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button("🚪 Sign Out / Lock Session", use_container_width=True, key="sidebar_signout_btn"):
+        client = get_supabase_frontend_client()
+        if client:
+            try:
+                client.auth.sign_out()
+            except Exception:
+                pass
+        st.session_state["authenticated"] = False
+        st.session_state["access_token"] = None
+        st.session_state["user"] = None
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 🧭 Platform Navigation")
+    platform_module = st.radio(
+        "Select Module",
+        options=["Credit Risk Assessment", "Fraud Detection"],
+        index=0 if st.session_state.get("platform_module") != "Fraud Detection" else 1,
+        key="platform_module_nav",
+        help="Switch between Phase 1 Credit Risk Analysis and Phase 2 Real-Time Fraud Detection.",
+    )
+    st.session_state["platform_module"] = platform_module
+
+    if platform_module == "Fraud Detection":
+        st.markdown("---")
+        st.markdown("### ⚙️ Fraud Engine Configuration")
+        fraud_api_url = st.text_input("FastAPI Base URL", value=API_BASE_URL, key="fraud_api_url_input")
+
+        if st.button("📡 Check Fraud API Health", use_container_width=True, key="btn_fraud_api_health"):
+            try:
+                res = requests.get(f"{fraud_api_url.rstrip('/')}/api/v1/fraud/health", timeout=3)
+                if res.status_code == 200:
+                    h = res.json()
+                    st.success(f"Connected! Model: {h.get('model_name')} ({h.get('model_version')}) | Status: {h.get('status')}")
+                else:
+                    st.warning(f"Fraud API returned HTTP {res.status_code}")
+            except Exception as exc:
+                st.error(f"Cannot reach Fraud API: {exc}")
+
+        st.markdown("---")
+        st.markdown(
+            """
+            <div style="background:#e0f2fe; padding:12px; border-radius:10px; font-size:12px; color:#0369a1; line-height: 1.5;">
+                <strong>Active Model:</strong> XGBoost (phase2-xgb-v1)<br>
+                <strong>Calibration:</strong> Platt Scaling (phase2-platt-v1)<br>
+                <strong>Risk Policy:</strong> phase2-policy-v1<br>
+                <strong>Feature Space:</strong> 17 Ingested & Historical Features<br>
+                <strong>Database:</strong> Supabase PostgreSQL
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown("---")
+        st.markdown("### ⚙️ Engine & Integration")
+        
+        execution_mode = st.radio(
+            "Execution Mode",
+            options=["FastAPI Backend (REST)", "Direct Engine (Local)"],
+            index=0,
+            help="REST mode communicates with the FastAPI service (source of truth). Direct mode runs the same canonical risk service locally.",
+        )
+        
+        api_url = API_BASE_URL
+        if execution_mode == "FastAPI Backend (REST)":
+            api_url = st.text_input("FastAPI Base URL", value=API_BASE_URL)
+            
+            # Test Connection button
+            if st.button("📡 Check API Health", use_container_width=True):
+                try:
+                    res = requests.get(f"{api_url}/health", timeout=3)
+                    if res.status_code == 200:
+                        health_data = res.json()
+                        st.success(f"Connected! Model: {health_data.get('model_version')} | Cal: {health_data.get('calibration_version')}")
+                    else:
+                        st.warning(f"API Returned HTTP {res.status_code}")
+                except Exception as e:
+                    st.error(f"Failed to reach API: {e}")
+
+            # Test Protected Auth Endpoint button
+            if st.button("🔑 Verify Session (/api/v1/auth/me)", use_container_width=True):
+                try:
+                    token = st.session_state.get("access_token", "")
+                    res = requests.get(
+                        f"{api_url}/api/v1/auth/me",
+                        headers={"Authorization": f"Bearer {token}"},
+                        timeout=4,
+                    )
+                    if res.status_code == 200:
+                        data = res.json()
+                        st.success(f"Verified! UID: {data.get('user_id')[:8]}... | Email: {data.get('email')}")
+                    else:
+                        st.warning(f"Auth check returned HTTP {res.status_code}: {res.text}")
+                except Exception as e:
+                    st.error(f"Failed to reach API: {e}")
+        
+        st.markdown("---")
+        st.markdown("### 📦 Quick Scenario Presets")
+        
+        preset_names = list(PRESETS.keys())
+        
+        def on_preset_select():
+            sel = st.session_state.get("preset_dropdown_selector")
+            if sel and sel in PRESETS:
+                st.session_state["current_payload"] = PRESETS[sel]
+                st.session_state["preset_nonce"] = st.session_state.get("preset_nonce", 0) + 1
+
+        selected_preset_name = st.selectbox(
+            "Load Preset Profile",
+            options=preset_names,
+            index=0,
+            key="preset_dropdown_selector",
+            on_change=on_preset_select,
+            help="Select a benchmark profile to instantly load its financial parameters into the assessment form.",
+        )
+        
+        if st.button("⚡ Apply Preset to Form", use_container_width=True):
+            cur_sel = st.session_state.get("preset_dropdown_selector", selected_preset_name)
+            preset_data = PRESETS[cur_sel]
+            st.session_state["current_payload"] = preset_data
+            st.session_state["preset_nonce"] = st.session_state.get("preset_nonce", 0) + 1
+            st.success(f"Loaded '{cur_sel}'!")
+            st.rerun()
+
+        st.markdown("---")
+        # Model info card
+        service, service_err = load_local_service()
+        if service:
+            info = service.info()
+            st.markdown(
+                f"""
+                <div style="background:#e0e7ff; padding:12px; border-radius:10px; font-size:12px; color:#3730a3; line-height: 1.5;">
+                    <strong>Active Model:</strong> {info['model_name']} ({info['model_version']})<br>
+                    <strong>Calibration:</strong> {info.get('calibration_version', 'N/A')}<br>
+                    <strong>Risk Policy:</strong> {info.get('policy_version', 'N/A')}<br>
+                    <strong>Feature Space:</strong> {info['feature_count']} engineered features<br>
+                    <strong>Engine:</strong> Frozen XGBoost + Platt Scaling
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        elif service_err:
+            st.warning(f"Local Model Notice: {service_err}")
+
+
+# Routing: Render Fraud Detection Page if selected
+if st.session_state.get("platform_module") == "Fraud Detection":
+    fraud_target_url = st.session_state.get("fraud_api_url_input", API_BASE_URL)
+    render_fraud_detection_page(api_base_url=fraud_target_url)
+    st.stop()
 
 
 # Initialize session state payload if absent
@@ -375,12 +651,21 @@ nonce = st.session_state.get("preset_nonce", 0)
 # -----------------------------------------------------------------------------
 # 4. MAIN HEADER & HERO
 # -----------------------------------------------------------------------------
+active_user = st.session_state.get("user") or {}
+active_name = active_user.get("full_name") or "Risk Analyst"
+active_email = active_user.get("email") or ""
+
 st.markdown(
-    """
+    f"""
     <div class="hero-card">
-        <div class="hero-title">
-            <span>🛡️ AegisFin-AI</span>
-            <span style="font-size:13px; background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:20px; font-weight:500;">Phase 1B Calibrated Release</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div class="hero-title">
+                <span>🛡️ AegisFin-AI</span>
+                <span style="font-size:13px; background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:20px; font-weight:500;">Phase 1B Calibrated Release</span>
+            </div>
+            <div style="background:rgba(16, 185, 129, 0.25); border:1px solid rgba(52, 211, 153, 0.5); padding:5px 14px; border-radius:20px; font-size:12px; color:#d1fae5; font-weight:600; display:flex; align-items:center; gap:6px;">
+                <span>🟢 Logged in:</span> <span>{active_name}</span> <span style="opacity:0.8; font-size:11px;">({active_email})</span>
+            </div>
         </div>
         <p class="hero-subtitle">
             Next-generation Credit Default Probability & Financial Risk Intelligence Dashboard powered by Calibrated XGBoost & Advanced Feature Engineering.
@@ -905,7 +1190,16 @@ if target_request_dict:
                 
         else: # FastAPI REST Mode
             try:
-                res = requests.post(f"{api_url}/api/v1/predict", json=target_request_dict, timeout=10)
+                headers = {}
+                token = st.session_state.get("access_token")
+                if token:
+                    headers["Authorization"] = f"Bearer {token}"
+                res = requests.post(
+                    f"{api_url}/api/v1/predict",
+                    json=target_request_dict,
+                    headers=headers,
+                    timeout=10,
+                )
                 if res.status_code == 200:
                     prediction_result = res.json()
                 else:
