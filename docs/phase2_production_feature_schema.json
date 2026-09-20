@@ -1,0 +1,1422 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AegisFin Phase 2 Validated Production Fraud Feature Schema",
+  "version": "2.1.0",
+  "description": "Validated, production-compatible feature engineering contract for AegisFin Phase 2 Fraud Detection. Eliminates legacy anonymous IEEE-CIS V-features and unverified signals, establishing an authentic, reproducible schema combining live transaction attributes and Supabase point-in-time entity history.",
+  "metadata": {
+    "total_candidate_features_audited": 78,
+    "audit_breakdown": {
+      "VALID": {
+        "count": 62,
+        "description": "Fully reproducible identically during both historical training and live inference.",
+        "status": "Production Candidate Feature Suite"
+      },
+      "NEEDS_DATA": {
+        "count": 13,
+        "description": "Valuable fraud risk features that currently lack raw input fields, Supabase schema support, or third-party APIs.",
+        "status": "Deferred to Phase 2.5 Enrichment"
+      },
+      "INVALID": {
+        "count": 3,
+        "description": "Features rejected due to mathematical instability, alphanumeric casting fragility, or ambiguous multi-entity collinearity.",
+        "status": "Permanently Excluded"
+      }
+    },
+    "final_production_feature_count": 62,
+    "anti_leakage_guarantee": "Strict point-in-time temporal filtering: historical_timestamp < current_transaction_timestamp enforced on all historical queries."
+  },
+  "raw_input_fields": [
+    {
+      "name": "transaction_id",
+      "type": "string",
+      "required": true,
+      "description": "Globally unique payment transaction reference identifier."
+    },
+    {
+      "name": "amount",
+      "type": "number",
+      "required": true,
+      "minimum": 0.0,
+      "description": "Transaction monetary value in USD."
+    },
+    {
+      "name": "transaction_timestamp",
+      "type": "string",
+      "format": "date-time",
+      "required": false,
+      "default": "current_utc_time",
+      "description": "ISO-8601 UTC timestamp of the transaction event."
+    },
+    {
+      "name": "customer_id",
+      "type": "string",
+      "required": true,
+      "description": "Unique identifier of the account holder or customer."
+    },
+    {
+      "name": "card_id",
+      "type": "string",
+      "required": true,
+      "description": "Payment card reference / card1 token identifier."
+    },
+    {
+      "name": "device_id",
+      "type": "string",
+      "required": false,
+      "description": "Client hardware fingerprint or device ID string."
+    },
+    {
+      "name": "merchant_id",
+      "type": "string",
+      "required": false,
+      "description": "Merchant or POS terminal reference identifier."
+    },
+    {
+      "name": "product_code",
+      "type": "string",
+      "enum": [
+        "W",
+        "H",
+        "C",
+        "S",
+        "R"
+      ],
+      "default": "W",
+      "description": "Transaction category product code (W=Web, H=Home, C=Commercial, S=Specialty, R=Retail)."
+    },
+    {
+      "name": "card_network",
+      "type": "string",
+      "enum": [
+        "visa",
+        "mastercard",
+        "discover",
+        "american express"
+      ],
+      "default": "visa",
+      "description": "Card payment network scheme."
+    },
+    {
+      "name": "card_type",
+      "type": "string",
+      "enum": [
+        "debit",
+        "credit"
+      ],
+      "default": "debit",
+      "description": "Card funding type."
+    },
+    {
+      "name": "email_domain",
+      "type": "string",
+      "required": false,
+      "description": "Purchaser email domain (e.g. gmail.com, yahoo.com)."
+    },
+    {
+      "name": "address_id",
+      "type": "string",
+      "required": false,
+      "description": "Billing zip code or location identifier."
+    },
+    {
+      "name": "ip_address",
+      "type": "string",
+      "required": false,
+      "description": "Client IPv4 or IPv6 address initiating transaction."
+    },
+    {
+      "name": "country",
+      "type": "string",
+      "required": false,
+      "description": "Two-letter ISO country code of transaction origin."
+    }
+  ],
+  "valid_production_feature_groups": {
+    "Direct Transaction Features": [
+      {
+        "name": "amount",
+        "data_type": "float",
+        "training_source": "raw_transaction.amount",
+        "live_source": "FastAPI request.amount",
+        "lookback_window": null,
+        "leakage_rule": "Intrinsic current transaction attribute; no leakage possible",
+        "formula": "float(amount)",
+        "nullable_behavior": "Required field; minimum 0.0",
+        "required_raw_fields": [
+          "amount"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "product_code_freq",
+        "data_type": "float",
+        "training_source": "raw_transaction.product_code",
+        "live_source": "FastAPI request.product_code",
+        "lookback_window": null,
+        "leakage_rule": "Intrinsic current transaction attribute mapped via frozen frequency dictionary",
+        "formula": "frequency_map.get(product_code, 0.01)",
+        "nullable_behavior": "Defaults to 'W' frequency (0.7432) if missing",
+        "required_raw_fields": [
+          "product_code"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "card_network_freq",
+        "data_type": "float",
+        "training_source": "raw_transaction.card_network",
+        "live_source": "FastAPI request.card_network",
+        "lookback_window": null,
+        "leakage_rule": "Intrinsic current transaction attribute mapped via frozen frequency dictionary",
+        "formula": "frequency_map.get(card_network.lower(), 0.01)",
+        "nullable_behavior": "Defaults to 'visa' frequency (0.6512) if missing",
+        "required_raw_fields": [
+          "card_network"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "card_type_freq",
+        "data_type": "float",
+        "training_source": "raw_transaction.card_type",
+        "live_source": "FastAPI request.card_type",
+        "lookback_window": null,
+        "leakage_rule": "Intrinsic current transaction attribute mapped via frozen frequency dictionary",
+        "formula": "frequency_map.get(card_type.lower(), 0.01)",
+        "nullable_behavior": "Defaults to 'debit' frequency (0.7425) if missing",
+        "required_raw_fields": [
+          "card_type"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "email_domain_freq",
+        "data_type": "float",
+        "training_source": "raw_transaction.email_domain",
+        "live_source": "FastAPI request.email_domain",
+        "lookback_window": null,
+        "leakage_rule": "Intrinsic current transaction attribute mapped via frozen frequency dictionary",
+        "formula": "frequency_map.get(email_domain.lower(), 0.01)",
+        "nullable_behavior": "Defaults to fallback frequency (0.01) if missing",
+        "required_raw_fields": [
+          "email_domain"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "missing_fields_count",
+        "data_type": "float",
+        "training_source": "raw_transaction fields null count",
+        "live_source": "FastAPI request fields null count",
+        "lookback_window": null,
+        "leakage_rule": "Intrinsic current transaction attribute",
+        "formula": "sum(1.0 for f in optional_fields if request[f] is None)",
+        "nullable_behavior": "0.0 to 8.0 integer count represented as float",
+        "required_raw_fields": [
+          "device_id",
+          "merchant_id",
+          "email_domain",
+          "address_id",
+          "ip_address",
+          "country",
+          "card_network",
+          "card_type"
+        ],
+        "required_supabase_fields": []
+      }
+    ],
+    "Time & Calendar Features": [
+      {
+        "name": "hour",
+        "data_type": "float",
+        "training_source": "raw_transaction.transaction_timestamp",
+        "live_source": "FastAPI request.transaction_timestamp",
+        "lookback_window": null,
+        "leakage_rule": "Computed directly from event timestamp",
+        "formula": "float(dt.hour)",
+        "nullable_behavior": "Defaults to current UTC hour if timestamp omitted",
+        "required_raw_fields": [
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "weekday_index",
+        "data_type": "float",
+        "training_source": "raw_transaction.transaction_timestamp",
+        "live_source": "FastAPI request.transaction_timestamp",
+        "lookback_window": null,
+        "leakage_rule": "Computed directly from event timestamp",
+        "formula": "float(dt.weekday())",
+        "nullable_behavior": "Defaults to current UTC weekday",
+        "required_raw_fields": [
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "is_weekend",
+        "data_type": "float",
+        "training_source": "raw_transaction.transaction_timestamp",
+        "live_source": "FastAPI request.transaction_timestamp",
+        "lookback_window": null,
+        "leakage_rule": "Computed directly from event timestamp",
+        "formula": "1.0 if dt.weekday() in (5, 6) else 0.0",
+        "nullable_behavior": "0.0 or 1.0",
+        "required_raw_fields": [
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "is_night",
+        "data_type": "float",
+        "training_source": "raw_transaction.transaction_timestamp",
+        "live_source": "FastAPI request.transaction_timestamp",
+        "lookback_window": null,
+        "leakage_rule": "Computed directly from event timestamp",
+        "formula": "1.0 if dt.hour < 6 else 0.0",
+        "nullable_behavior": "0.0 or 1.0",
+        "required_raw_fields": [
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "day_of_year",
+        "data_type": "float",
+        "training_source": "raw_transaction.transaction_timestamp",
+        "live_source": "FastAPI request.transaction_timestamp",
+        "lookback_window": null,
+        "leakage_rule": "Computed directly from event timestamp",
+        "formula": "float(dt.timetuple().tm_yday)",
+        "nullable_behavior": "Defaults to current day of year",
+        "required_raw_fields": [
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "time_since_midnight_sec",
+        "data_type": "float",
+        "training_source": "raw_transaction.transaction_timestamp",
+        "live_source": "FastAPI request.transaction_timestamp",
+        "lookback_window": null,
+        "leakage_rule": "Computed directly from event timestamp",
+        "formula": "float(dt.hour * 3600 + dt.minute * 60 + dt.second)",
+        "nullable_behavior": "Defaults to seconds elapsed since 00:00:00 UTC",
+        "required_raw_fields": [
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": []
+      }
+    ],
+    "Amount Transformation Features": [
+      {
+        "name": "amount_log",
+        "data_type": "float",
+        "training_source": "raw_transaction.amount",
+        "live_source": "FastAPI request.amount",
+        "lookback_window": null,
+        "leakage_rule": "Intrinsic current transaction attribute",
+        "formula": "math.log1p(amount)",
+        "nullable_behavior": "0.0 if amount <= 0",
+        "required_raw_fields": [
+          "amount"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "amount_cents",
+        "data_type": "float",
+        "training_source": "raw_transaction.amount",
+        "live_source": "FastAPI request.amount",
+        "lookback_window": null,
+        "leakage_rule": "Intrinsic current transaction attribute",
+        "formula": "round(amount % 1.0, 2)",
+        "nullable_behavior": "0.0",
+        "required_raw_fields": [
+          "amount"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "is_round_amount",
+        "data_type": "float",
+        "training_source": "raw_transaction.amount",
+        "live_source": "FastAPI request.amount",
+        "lookback_window": null,
+        "leakage_rule": "Intrinsic current transaction attribute",
+        "formula": "1.0 if amount >= 10.0 and (amount % 10.0 == 0.0) else 0.0",
+        "nullable_behavior": "0.0",
+        "required_raw_fields": [
+          "amount"
+        ],
+        "required_supabase_fields": []
+      },
+      {
+        "name": "is_zero_cents",
+        "data_type": "float",
+        "training_source": "raw_transaction.amount",
+        "live_source": "FastAPI request.amount",
+        "lookback_window": null,
+        "leakage_rule": "Intrinsic current transaction attribute",
+        "formula": "1.0 if (amount % 1.0 == 0.0) else 0.0",
+        "nullable_behavior": "1.0",
+        "required_raw_fields": [
+          "amount"
+        ],
+        "required_supabase_fields": []
+      }
+    ],
+    "Customer Behavioral History": [
+      {
+        "name": "customer_tx_count_5m",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts in [t_curr - 5m, t_curr)",
+        "live_source": "Supabase fraud_transactions query where customer_id=curr and ts in [t_curr - 5m, t_curr)",
+        "lookback_window": "5m",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.customer == curr and t_curr - 300 <= tx.ts < t_curr))",
+        "nullable_behavior": "0.0 if no prior history",
+        "required_raw_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_tx_count_1h",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts in [t_curr - 1h, t_curr)",
+        "live_source": "Supabase fraud_transactions query where customer_id=curr and ts in [t_curr - 1h, t_curr)",
+        "lookback_window": "1h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.customer == curr and t_curr - 3600 <= tx.ts < t_curr))",
+        "nullable_behavior": "0.0 if no prior history",
+        "required_raw_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_tx_count_24h",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions query where customer_id=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.customer == curr and t_curr - 86400 <= tx.ts < t_curr))",
+        "nullable_behavior": "0.0 if no prior history",
+        "required_raw_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_amount_mean",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_entity_state or fraud_transactions where customer_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "mean([tx.amount for tx in history if tx.customer == curr and tx.ts < t_curr])",
+        "nullable_behavior": "0.0 if no prior history",
+        "required_raw_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_amount_std",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "std([tx.amount for tx in history if tx.customer == curr and tx.ts < t_curr])",
+        "nullable_behavior": "0.0 if count < 2",
+        "required_raw_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_amount_zscore",
+        "data_type": "float",
+        "training_source": "Derived from amount, customer_amount_mean, customer_amount_std",
+        "live_source": "Derived from amount, customer_amount_mean, customer_amount_std",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "(amount - mean) / (std + 1e-5) if count >= 2 and std > 0 else 0.0",
+        "nullable_behavior": "0.0 if count < 2 or std == 0",
+        "required_raw_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_amount_ratio",
+        "data_type": "float",
+        "training_source": "Derived from amount and customer_amount_mean",
+        "live_source": "Derived from amount and customer_amount_mean",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "amount / (mean + 1e-5) if count > 0 else 1.0",
+        "nullable_behavior": "1.0 if new customer",
+        "required_raw_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_is_new",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if past_customer_count == 0 else 0.0",
+        "nullable_behavior": "1.0 for first transaction",
+        "required_raw_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_unique_merchants_24h",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(len(set(tx.merchant for tx in history if tx.customer == curr and tx.merchant and t_curr - 86400 <= tx.ts < t_curr)))",
+        "nullable_behavior": "0.0 if no prior merchants",
+        "required_raw_fields": [
+          "customer_id",
+          "merchant_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "merchant_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_unique_devices_24h",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(len(set(tx.device for tx in history if tx.customer == curr and tx.device and t_curr - 86400 <= tx.ts < t_curr)))",
+        "nullable_behavior": "0.0 if no prior devices",
+        "required_raw_fields": [
+          "customer_id",
+          "device_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "device_id",
+          "transaction_timestamp"
+        ]
+      }
+    ],
+    "Card Behavioral History": [
+      {
+        "name": "card_tx_count_5m",
+        "data_type": "float",
+        "training_source": "history where card_id=curr and ts in [t_curr - 5m, t_curr)",
+        "live_source": "Supabase fraud_transactions where card_id=curr and ts in [t_curr - 5m, t_curr)",
+        "lookback_window": "5m",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.card == curr and t_curr - 300 <= tx.ts < t_curr))",
+        "nullable_behavior": "0.0",
+        "required_raw_fields": [
+          "card_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "card_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "card_tx_count_1h",
+        "data_type": "float",
+        "training_source": "history where card_id=curr and ts in [t_curr - 1h, t_curr)",
+        "live_source": "Supabase fraud_transactions where card_id=curr and ts in [t_curr - 1h, t_curr)",
+        "lookback_window": "1h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.card == curr and t_curr - 3600 <= tx.ts < t_curr))",
+        "nullable_behavior": "0.0",
+        "required_raw_fields": [
+          "card_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "card_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "card_tx_count_24h",
+        "data_type": "float",
+        "training_source": "history where card_id=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where card_id=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.card == curr and t_curr - 86400 <= tx.ts < t_curr))",
+        "nullable_behavior": "0.0",
+        "required_raw_fields": [
+          "card_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "card_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "card_amount_mean",
+        "data_type": "float",
+        "training_source": "history where card_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where card_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "mean([tx.amount for tx in history if tx.card == curr and tx.ts < t_curr])",
+        "nullable_behavior": "0.0 if no prior card transactions",
+        "required_raw_fields": [
+          "card_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "card_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "card_amount_std",
+        "data_type": "float",
+        "training_source": "history where card_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where card_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "std([tx.amount for tx in history if tx.card == curr and tx.ts < t_curr])",
+        "nullable_behavior": "0.0 if count < 2",
+        "required_raw_fields": [
+          "card_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "card_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "card_amount_ratio",
+        "data_type": "float",
+        "training_source": "Derived from amount and card_amount_mean",
+        "live_source": "Derived from amount and card_amount_mean",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "amount / (card_mean + 1e-5) if count > 0 else 1.0",
+        "nullable_behavior": "1.0 if new card",
+        "required_raw_fields": [
+          "card_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "card_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "card_is_new",
+        "data_type": "float",
+        "training_source": "history where card_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where card_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if card_past_count == 0 else 0.0",
+        "nullable_behavior": "1.0 for first transaction on card",
+        "required_raw_fields": [
+          "card_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "card_id",
+          "transaction_timestamp"
+        ]
+      }
+    ],
+    "Device Fingerprint History": [
+      {
+        "name": "device_tx_count_5m",
+        "data_type": "float",
+        "training_source": "history where device_id=curr and ts in [t_curr - 5m, t_curr)",
+        "live_source": "Supabase fraud_transactions where device_id=curr and ts in [t_curr - 5m, t_curr)",
+        "lookback_window": "5m",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.device == curr and t_curr - 300 <= tx.ts < t_curr)) if curr else 0.0",
+        "nullable_behavior": "0.0 if device_id is null or no prior events",
+        "required_raw_fields": [
+          "device_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "device_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "device_tx_count_1h",
+        "data_type": "float",
+        "training_source": "history where device_id=curr and ts in [t_curr - 1h, t_curr)",
+        "live_source": "Supabase fraud_transactions where device_id=curr and ts in [t_curr - 1h, t_curr)",
+        "lookback_window": "1h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.device == curr and t_curr - 3600 <= tx.ts < t_curr)) if curr else 0.0",
+        "nullable_behavior": "0.0 if device_id is null or no prior events",
+        "required_raw_fields": [
+          "device_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "device_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "device_tx_count_24h",
+        "data_type": "float",
+        "training_source": "history where device_id=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where device_id=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.device == curr and t_curr - 86400 <= tx.ts < t_curr)) if curr else 0.0",
+        "nullable_behavior": "0.0 if device_id is null or no prior events",
+        "required_raw_fields": [
+          "device_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "device_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "device_unique_customers_24h",
+        "data_type": "float",
+        "training_source": "history where device_id=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where device_id=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(len(set(tx.customer for tx in history if tx.device == curr and t_curr - 86400 <= tx.ts < t_curr))) if curr else 0.0",
+        "nullable_behavior": "0.0 if device_id is null",
+        "required_raw_fields": [
+          "device_id",
+          "customer_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "device_id",
+          "customer_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "device_unique_cards_24h",
+        "data_type": "float",
+        "training_source": "history where device_id=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where device_id=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(len(set(tx.card for tx in history if tx.device == curr and t_curr - 86400 <= tx.ts < t_curr))) if curr else 0.0",
+        "nullable_behavior": "0.0 if device_id is null",
+        "required_raw_fields": [
+          "device_id",
+          "card_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "device_id",
+          "card_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "device_is_new",
+        "data_type": "float",
+        "training_source": "history where device_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where device_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if curr and device_past_count == 0 else 0.0",
+        "nullable_behavior": "0.0 if device_id is omitted",
+        "required_raw_fields": [
+          "device_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "device_id",
+          "transaction_timestamp"
+        ]
+      }
+    ],
+    "Merchant Risk & History": [
+      {
+        "name": "merchant_tx_count_1h",
+        "data_type": "float",
+        "training_source": "history where merchant_id=curr and ts in [t_curr - 1h, t_curr)",
+        "live_source": "Supabase fraud_transactions where merchant_id=curr and ts in [t_curr - 1h, t_curr)",
+        "lookback_window": "1h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.merchant == curr and t_curr - 3600 <= tx.ts < t_curr)) if curr else 0.0",
+        "nullable_behavior": "0.0 if merchant_id is null",
+        "required_raw_fields": [
+          "merchant_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "merchant_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "merchant_tx_count_24h",
+        "data_type": "float",
+        "training_source": "history where merchant_id=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where merchant_id=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.merchant == curr and t_curr - 86400 <= tx.ts < t_curr)) if curr else 0.0",
+        "nullable_behavior": "0.0 if merchant_id is null",
+        "required_raw_fields": [
+          "merchant_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "merchant_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "merchant_amount_mean",
+        "data_type": "float",
+        "training_source": "history where merchant_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where merchant_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "mean([tx.amount for tx in history if tx.merchant == curr and tx.ts < t_curr]) if curr else 0.0",
+        "nullable_behavior": "0.0 if merchant_id is null or count == 0",
+        "required_raw_fields": [
+          "merchant_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "merchant_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "merchant_amount_std",
+        "data_type": "float",
+        "training_source": "history where merchant_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where merchant_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "std([tx.amount for tx in history if tx.merchant == curr and tx.ts < t_curr]) if curr else 0.0",
+        "nullable_behavior": "0.0 if count < 2",
+        "required_raw_fields": [
+          "merchant_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "merchant_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_merchant_tx_count",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and merchant_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and merchant_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.customer == curr and tx.merchant == curr and tx.ts < t_curr))",
+        "nullable_behavior": "0.0 if merchant_id is null or no prior interaction",
+        "required_raw_fields": [
+          "customer_id",
+          "merchant_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "merchant_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_merchant_is_new",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and merchant_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and merchant_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if curr_merchant and customer_merchant_tx_count == 0 else 0.0",
+        "nullable_behavior": "0.0 if merchant_id is null",
+        "required_raw_fields": [
+          "customer_id",
+          "merchant_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "merchant_id",
+          "transaction_timestamp"
+        ]
+      }
+    ],
+    "Client IP Network History": [
+      {
+        "name": "ip_tx_count_5m",
+        "data_type": "float",
+        "training_source": "history where ip_address=curr and ts in [t_curr - 5m, t_curr)",
+        "live_source": "Supabase fraud_transactions where ip_address=curr and ts in [t_curr - 5m, t_curr)",
+        "lookback_window": "5m",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.ip == curr and t_curr - 300 <= tx.ts < t_curr)) if curr else 0.0",
+        "nullable_behavior": "0.0 if ip is null",
+        "required_raw_fields": [
+          "ip_address",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "ip_address",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "ip_tx_count_1h",
+        "data_type": "float",
+        "training_source": "history where ip_address=curr and ts in [t_curr - 1h, t_curr)",
+        "live_source": "Supabase fraud_transactions where ip_address=curr and ts in [t_curr - 1h, t_curr)",
+        "lookback_window": "1h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.ip == curr and t_curr - 3600 <= tx.ts < t_curr)) if curr else 0.0",
+        "nullable_behavior": "0.0 if ip is null",
+        "required_raw_fields": [
+          "ip_address",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "ip_address",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "ip_tx_count_24h",
+        "data_type": "float",
+        "training_source": "history where ip_address=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where ip_address=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.ip == curr and t_curr - 86400 <= tx.ts < t_curr)) if curr else 0.0",
+        "nullable_behavior": "0.0 if ip is null",
+        "required_raw_fields": [
+          "ip_address",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "ip_address",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "ip_unique_customers_24h",
+        "data_type": "float",
+        "training_source": "history where ip_address=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where ip_address=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(len(set(tx.customer for tx in history if tx.ip == curr and t_curr - 86400 <= tx.ts < t_curr))) if curr else 0.0",
+        "nullable_behavior": "0.0 if ip is null",
+        "required_raw_fields": [
+          "ip_address",
+          "customer_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "ip_address",
+          "customer_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "ip_unique_cards_24h",
+        "data_type": "float",
+        "training_source": "history where ip_address=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where ip_address=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(len(set(tx.card for tx in history if tx.ip == curr and t_curr - 86400 <= tx.ts < t_curr))) if curr else 0.0",
+        "nullable_behavior": "0.0 if ip is null",
+        "required_raw_fields": [
+          "ip_address",
+          "card_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "ip_address",
+          "card_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "ip_unique_devices_24h",
+        "data_type": "float",
+        "training_source": "history where ip_address=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where ip_address=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(len(set(tx.device for tx in history if tx.ip == curr and tx.device and t_curr - 86400 <= tx.ts < t_curr))) if curr else 0.0",
+        "nullable_behavior": "0.0 if ip is null",
+        "required_raw_fields": [
+          "ip_address",
+          "device_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "ip_address",
+          "device_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "ip_is_new",
+        "data_type": "float",
+        "training_source": "history where ip_address=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where ip_address=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if curr_ip and ip_past_count == 0 else 0.0",
+        "nullable_behavior": "0.0 if ip is omitted",
+        "required_raw_fields": [
+          "ip_address",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "ip_address",
+          "transaction_timestamp"
+        ]
+      }
+    ],
+    "Cross-Entity Relationship Features": [
+      {
+        "name": "customer_device_seen_before",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and device_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and device_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if curr_device and any(tx.customer == curr and tx.device == curr and tx.ts < t_curr for tx in history) else 0.0",
+        "nullable_behavior": "0.0 if device_id is null",
+        "required_raw_fields": [
+          "customer_id",
+          "device_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "device_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_card_seen_before",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and card_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and card_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if any(tx.customer == curr and tx.card == curr and tx.ts < t_curr for tx in history) else 0.0",
+        "nullable_behavior": "0.0 for first time card-customer pairing",
+        "required_raw_fields": [
+          "customer_id",
+          "card_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "card_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_merchant_seen_before",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and merchant_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and merchant_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if curr_merchant and any(tx.customer == curr and tx.merchant == curr and tx.ts < t_curr for tx in history) else 0.0",
+        "nullable_behavior": "0.0 if merchant is null",
+        "required_raw_fields": [
+          "customer_id",
+          "merchant_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "merchant_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "customer_ip_seen_before",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ip_address=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and ip_address=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if curr_ip and any(tx.customer == curr and tx.ip == curr and tx.ts < t_curr for tx in history) else 0.0",
+        "nullable_behavior": "0.0 if ip is null",
+        "required_raw_fields": [
+          "customer_id",
+          "ip_address",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "ip_address",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "card_device_seen_before",
+        "data_type": "float",
+        "training_source": "history where card_id=curr and device_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where card_id=curr and device_id=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if curr_device and any(tx.card == curr and tx.device == curr and tx.ts < t_curr for tx in history) else 0.0",
+        "nullable_behavior": "0.0 if device is null",
+        "required_raw_fields": [
+          "card_id",
+          "device_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "card_id",
+          "device_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "card_ip_seen_before",
+        "data_type": "float",
+        "training_source": "history where card_id=curr and ip_address=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where card_id=curr and ip_address=curr and ts < t_curr",
+        "lookback_window": "lifetime",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if curr_ip and any(tx.card == curr and tx.ip == curr and tx.ts < t_curr for tx in history) else 0.0",
+        "nullable_behavior": "0.0 if ip is null",
+        "required_raw_fields": [
+          "card_id",
+          "ip_address",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "card_id",
+          "ip_address",
+          "transaction_timestamp"
+        ]
+      }
+    ],
+    "Velocity & Burst Features": [
+      {
+        "name": "rapid_transaction_flag",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts < t_curr",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and ts < t_curr",
+        "lookback_window": "60s",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "1.0 if last_tx_delta_sec <= 60.0 else 0.0",
+        "nullable_behavior": "0.0 if first customer transaction",
+        "required_raw_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "transactions_last_15m",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts in [t_curr - 15m, t_curr)",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and ts in [t_curr - 15m, t_curr)",
+        "lookback_window": "15m",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(count(tx in history if tx.customer == curr and t_curr - 900 <= tx.ts < t_curr))",
+        "nullable_behavior": "0.0",
+        "required_raw_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "amount_sum_last_1h",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts in [t_curr - 1h, t_curr)",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and ts in [t_curr - 1h, t_curr)",
+        "lookback_window": "1h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(sum(tx.amount for tx in history if tx.customer == curr and t_curr - 3600 <= tx.ts < t_curr))",
+        "nullable_behavior": "0.0",
+        "required_raw_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      },
+      {
+        "name": "amount_sum_last_24h",
+        "data_type": "float",
+        "training_source": "history where customer_id=curr and ts in [t_curr - 24h, t_curr)",
+        "live_source": "Supabase fraud_transactions where customer_id=curr and ts in [t_curr - 24h, t_curr)",
+        "lookback_window": "24h",
+        "leakage_rule": "Strict: tx.timestamp < current_timestamp",
+        "formula": "float(sum(tx.amount for tx in history if tx.customer == curr and t_curr - 86400 <= tx.ts < t_curr))",
+        "nullable_behavior": "0.0",
+        "required_raw_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ],
+        "required_supabase_fields": [
+          "customer_id",
+          "amount",
+          "transaction_timestamp"
+        ]
+      }
+    ]
+  },
+  "needs_data_features": [
+    {
+      "feature_name": "country_freq",
+      "group": "Direct Transaction Features",
+      "missing_dependency": "Historical IEEE-CIS benchmark dataset did not contain an ISO 2-letter country column; requires establishing an authoritative cross-border country frequency table.",
+      "required_raw_fields": [
+        "country"
+      ],
+      "required_supabase_fields": []
+    },
+    {
+      "feature_name": "device_risk_score",
+      "group": "Device Intelligence",
+      "missing_dependency": "Requires contract and integration with commercial device intelligence vendor (FingerprintJS / Sift); not present in current AegisFin system.",
+      "required_raw_fields": [
+        "device_id"
+      ],
+      "required_supabase_fields": []
+    },
+    {
+      "feature_name": "merchant_fraud_rate_historical",
+      "group": "Merchant Risk & History",
+      "missing_dependency": "Requires confirmed chargeback/fraud outcome feedback labels in Supabase; current fraud_transactions table does not track dispute labels.",
+      "required_raw_fields": [
+        "merchant_id"
+      ],
+      "required_supabase_fields": [
+        "merchant_id",
+        "is_fraud_confirmed"
+      ]
+    },
+    {
+      "feature_name": "ip_is_vpn_or_proxy",
+      "group": "Client IP Network History",
+      "missing_dependency": "Requires external IP proxy/VPN database integration (MaxMind GeoIP2 Precision or IPQualityScore); not available in offline AegisFin environment.",
+      "required_raw_fields": [
+        "ip_address"
+      ],
+      "required_supabase_fields": []
+    },
+    {
+      "feature_name": "ip_country_mismatch",
+      "group": "Client IP Network History",
+      "missing_dependency": "Requires MaxMind GeoIP2 city/country database to resolve client IP to ISO country for comparison against transaction country.",
+      "required_raw_fields": [
+        "ip_address",
+        "country"
+      ],
+      "required_supabase_fields": []
+    },
+    {
+      "feature_name": "consecutive_declines_24h",
+      "group": "Velocity & Burst Features",
+      "missing_dependency": "Requires payment gateway decline webhook ingestion; public.fraud_transactions only records transactions submitted for fraud scoring, not upstream bank declines.",
+      "required_raw_fields": [
+        "card_id",
+        "customer_id"
+      ],
+      "required_supabase_fields": [
+        "gateway_status",
+        "decline_code"
+      ]
+    },
+    {
+      "feature_name": "card_days_active",
+      "group": "Card Behavioral History",
+      "missing_dependency": "Requires card issuance date from issuing bank API or payment gateway tokenization metadata.",
+      "required_raw_fields": [
+        "card_id"
+      ],
+      "required_supabase_fields": [
+        "card_issued_at"
+      ]
+    },
+    {
+      "feature_name": "account_age_days",
+      "group": "Customer Behavioral History",
+      "missing_dependency": "Requires linking customer_id to Supabase auth/profiles.created_at timestamp during fraud feature extraction.",
+      "required_raw_fields": [
+        "customer_id"
+      ],
+      "required_supabase_fields": [
+        "profiles.created_at"
+      ]
+    },
+    {
+      "feature_name": "transaction_channel",
+      "group": "Direct Transaction Features",
+      "missing_dependency": "Channel ('WEB', 'MOBILE_APP', 'POS', 'API') is not currently present in Streamlit form or FastAPI FraudPredictionRequest schema.",
+      "required_raw_fields": [
+        "channel"
+      ],
+      "required_supabase_fields": []
+    },
+    {
+      "feature_name": "shipping_country",
+      "group": "Direct Transaction Features",
+      "missing_dependency": "Shipping destination country is not currently collected in Streamlit or accepted in FastAPI FraudPredictionRequest schema.",
+      "required_raw_fields": [
+        "shipping_country",
+        "country"
+      ],
+      "required_supabase_fields": []
+    },
+    {
+      "feature_name": "browser_user_agent",
+      "group": "Device Intelligence",
+      "missing_dependency": "Browser client telemetry / User-Agent string is not passed in current JSON payload or extracted from FastAPI request headers.",
+      "required_raw_fields": [
+        "user_agent"
+      ],
+      "required_supabase_fields": []
+    },
+    {
+      "feature_name": "card_velocity_surge",
+      "group": "Velocity & Burst Features",
+      "missing_dependency": "Requires retaining a rolling 30-day baseline hourly velocity; current Supabase state only tracks all-time aggregates.",
+      "required_raw_fields": [
+        "card_id"
+      ],
+      "required_supabase_fields": [
+        "card_id",
+        "transaction_timestamp"
+      ]
+    },
+    {
+      "feature_name": "device_velocity_surge",
+      "group": "Velocity & Burst Features",
+      "missing_dependency": "Requires 30-day rolling hardware baseline velocity; current Supabase state does not retain device-level rolling windows.",
+      "required_raw_fields": [
+        "device_id"
+      ],
+      "required_supabase_fields": [
+        "device_id",
+        "transaction_timestamp"
+      ]
+    }
+  ],
+  "invalid_features": [
+    {
+      "feature_name": "address_id_numeric",
+      "group": "Direct Transaction Features",
+      "rejection_reason": "address_id is an arbitrary alphanumeric identifier in production (e.g., 'ZIP_94103', 'NY'); direct float cast crashes or produces spurious ordinal relationships in tree models."
+    },
+    {
+      "feature_name": "transactions_last_5m",
+      "group": "Velocity & Burst Features",
+      "rejection_reason": "Ambiguous formulation ('across customer/card') introduces double-counting and collinearity with customer_tx_count_5m and card_tx_count_5m."
+    },
+    {
+      "feature_name": "transactions_last_1h",
+      "group": "Velocity & Burst Features",
+      "rejection_reason": "Ambiguous entity definition and direct collinear duplicate of customer_tx_count_1h."
+    }
+  ]
+}

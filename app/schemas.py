@@ -141,3 +141,58 @@ class PredictionResponse(BaseModel):
     model: Optional[str] = Field(None, description="Alias for model_name")
     raw_probability: Optional[float] = Field(None, description="Uncalibrated raw XGBoost probability")
     calibration_method: Optional[str] = Field(None, description="Calibration algorithm")
+
+
+class FraudPredictionRequest(BaseModel):
+    """
+    Production-facing Phase 2 Fraud Prediction Request.
+    Accepts raw transaction parameters required by the feature engine.
+    """
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="allow",
+    )
+
+    transaction_id: str = Field(..., min_length=1, description="Unique transaction identifier")
+    amount: float = Field(..., ge=0.0, description="Transaction amount in USD", alias="transaction_amount")
+    transaction_timestamp: Optional[str] = Field(
+        default=None,
+        alias="timestamp",
+        description="ISO-8601 UTC timestamp of transaction. Defaults to current time if omitted.",
+    )
+    customer_id: str = Field(..., min_length=1, description="Customer or account identifier")
+    card_id: str = Field(..., min_length=1, description="Card identifier (maps to card1)")
+    device_id: Optional[str] = Field(None, description="Device fingerprint / identifier")
+    merchant_id: Optional[str] = Field(None, description="Merchant identifier")
+    email_domain: Optional[str] = Field(None, description="Purchaser email domain (maps to P_emaildomain)")
+    address_id: Optional[str] = Field(None, description="Billing zip or address identifier (maps to addr1)")
+    product_code: Optional[str] = Field("W", description="Transaction product code (W, H, C, S, R)")
+    card_network: Optional[str] = Field(None, description="Card network (visa, mastercard, etc.)")
+    card_type: Optional[str] = Field(None, description="Card type (debit, credit)")
+    ip_address: Optional[str] = Field(None, description="Client IP address")
+    country: Optional[str] = Field(None, description="Country code (e.g. US, IN)")
+
+
+class FraudPredictionResponse(BaseModel):
+    """
+    Phase 2 Fraud Prediction Response.
+    Returns calibrated fraud probability, policy band, operational decision, and model metadata.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    transaction_id: str = Field(..., description="Unique transaction identifier")
+    fraud_probability: float = Field(..., ge=0.0, le=1.0, description="Calibrated fraud probability")
+    fraud_band: Literal["LOW", "REVIEW", "HIGH"] = Field(..., description="Policy risk band")
+    decision: Literal["ALLOW", "MANUAL_REVIEW", "BLOCK"] = Field(..., description="Operational policy decision")
+    model_name: str = Field(..., description="Model family (XGBoost)")
+    model_version: str = Field(..., description="Trained model version")
+    calibration_version: str = Field(..., description="Calibration version")
+    policy_version: str = Field(..., description="Risk policy version")
+    prediction_latency_ms: float = Field(..., description="Inference latency in milliseconds")
+
+    # Optional technical / audit fields
+    raw_probability: Optional[float] = Field(None, description="Uncalibrated raw model probability")
+    calibration_method: Optional[str] = Field(None, description="Calibration algorithm (Platt)")
+    feature_count: Optional[int] = Field(None, description="Number of model features evaluated")
