@@ -1,0 +1,81 @@
+{
+  "dataset_name": "AegisFin Phase 2 Behavioral Dataset v2",
+  "created_at_utc": "2026-09-21 04:16:30 UTC",
+  "rows_generated": 100000,
+  "fraud_count": 8238,
+  "legitimate_count": 91762,
+  "fraud_rate_pct": 8.238,
+  "production_features_count": 62,
+  "production_features_unchanged": true,
+  "entity_statistics": {
+    "unique_customers": 8000,
+    "unique_cards": 9541,
+    "unique_devices": 15166,
+    "unique_merchants": 1200,
+    "unique_ips": 13029
+  },
+  "realism_metrics": {
+    "item_A_legit_device_tx_1h_gt0": {
+      "count": 3487,
+      "percentage": 3.8
+    },
+    "item_B_legit_ip_tx_1h_gt0": {
+      "count": 5137,
+      "percentage": 5.6
+    },
+    "item_C_legit_customer_ip_seen_before_eq0": {
+      "count": 24776,
+      "percentage": 27.0
+    },
+    "item_D_legit_customer_device_seen_before_eq0": {
+      "count": 18183,
+      "percentage": 19.82
+    },
+    "item_E_legit_amount_lt5": {
+      "count": 3465,
+      "percentage": 3.78
+    },
+    "item_F_legit_amount_250_800": {
+      "count": 8845,
+      "percentage": 9.64
+    },
+    "item_G_fraud_device_tx_1h_eq0": {
+      "count": 2596,
+      "percentage": 31.51
+    },
+    "item_H_fraud_ip_tx_1h_eq0": {
+      "count": 2458,
+      "percentage": 29.84
+    },
+    "item_I_fraud_amount_gt5": {
+      "count": 6704,
+      "percentage": 81.38
+    },
+    "item_J_fraud_amount_250_800": {
+      "count": 3171,
+      "percentage": 38.49
+    }
+  },
+  "telemetry_missingness": {
+    "total_missing_device_id": 4820,
+    "legit_missing_device_id": 4572,
+    "legit_missing_device_id_pct": 4.98,
+    "fraud_missing_device_id": 248,
+    "fraud_missing_device_id_pct": 3.01
+  },
+  "scenario_breakdown": {
+    "Legitimate Stable": 88262,
+    "Card Testing": 1699,
+    "Legitimate High-Value": 3500,
+    "Account Takeover": 1544,
+    "Stolen Card": 1500,
+    "Burst Fraud": 1500,
+    "Shared Device / IP Ring": 1995
+  },
+  "validation_result": "PASS (All 10 validation categories passed)",
+  "output_file_paths": {
+    "raw_transactions_csv": "data/behavioral/raw_transactions_100k_v2.csv",
+    "production_features_csv": "data/behavioral/production_features_100k_v2.csv",
+    "metadata_json": "data/behavioral/behavioral_dataset_metadata_v2.json"
+  }
+}

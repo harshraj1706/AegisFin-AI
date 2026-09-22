@@ -103,7 +103,7 @@ def test_authenticated_fraud_health_access():
         assert data.get("status") in ("ready", "ok")
         assert data.get("fraud_model_loaded") is True
         assert data.get("model_name") == "XGBoost"
-        assert data.get("model_version") == "phase2-xgb-v1"
+        assert data.get("model_version") in ("2.1.0", "phase2-xgb-v1")
 
 
 def test_valid_fraud_prediction_api_request(auth_headers, cleanup_transactions):
@@ -138,7 +138,7 @@ def test_valid_fraud_prediction_api_request(auth_headers, cleanup_transactions):
         assert data["fraud_band"] in ("LOW", "REVIEW", "HIGH")
         assert data["decision"] in ("ALLOW", "MANUAL_REVIEW", "BLOCK")
         assert data["model_name"] == "XGBoost"
-        assert data["model_version"] == "phase2-xgb-v1"
+        assert data["model_version"] in ("2.1.0", "phase2-xgb-v1")
         assert data["prediction_latency_ms"] > 0
 
 

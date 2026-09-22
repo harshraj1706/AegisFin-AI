@@ -1,0 +1,234 @@
+{
+  "audit_report_type": "supabase_schema_audit_v2",
+  "audit_review_stage": "Step 14.5 Final Review",
+  "governance_statement": "Audit of current Supabase database architecture, SQL schemas, and migration readiness for AegisFin-AI Phase 2 Fraud Detection. No live database modifications executed.",
+  "audit_timestamp_utc": "2026-09-21T09:15:00+00:00",
+  "migration_file_path": "supabase/migrations/20260921000001_phase2_fraud_schema_update.sql",
+  "migration_status": "PREPARED_AND_REVIEWED",
+  "migration_safety_status": "SAFE_NON_DESTRUCTIVE",
+  "column_count_correction": {
+    "audit_statement": "Resolved column-count inconsistency. Previous audit stated 6 columns; actual count is 7 additive columns.",
+    "additive_column_count": 7,
+    "additive_columns": [
+      {
+        "name": "raw_fraud_probability",
+        "type": "NUMERIC(8, 7)",
+        "nullable": true,
+        "description": "Base uncalibrated XGBoost model probability [0, 1]."
+      },
+      {
+        "name": "calibrated_fraud_probability",
+        "type": "NUMERIC(8, 7)",
+        "nullable": true,
+        "description": "Post-Platt calibrated posterior fraud probability [0, 1]."
+      },
+      {
+        "name": "risk_band",
+        "type": "VARCHAR(20)",
+        "nullable": true,
+        "description": "Canonical Phase 2 4-tier risk band ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')."
+      },
+      {
+        "name": "recommended_action",
+        "type": "VARCHAR(30)",
+        "nullable": true,
+        "description": "Canonical Phase 2 4-tier operational action ('AUTO_APPROVE', 'STEP_UP_AUTH', 'MANUAL_REVIEW', 'HARD_DECLINE')."
+      },
+      {
+        "name": "feature_contract_version",
+        "type": "VARCHAR(20)",
+        "nullable": true,
+        "default": "'2.1.0'",
+        "description": "Validated 62-feature production contract version."
+      },
+      {
+        "name": "calibrator_type",
+        "type": "VARCHAR(30)",
+        "nullable": true,
+        "default": "'sigmoid'",
+        "description": "Calibration method used (Platt sigmoid logistic scaling)."
+      },
+      {
+        "name": "scored_at",
+        "type": "TIMESTAMPTZ",
+        "nullable": true,
+        "default": "now()",
+        "description": "Explicit scoring event timestamp."
+      }
+    ]
+  },
+  "probability_precision_verification": {
+    "type": "NUMERIC(8, 7)",
+    "integer_digits": 1,
+    "fractional_digits": 7,
+    "valid_range": "[-9.9999999, +9.9999999]",
+    "unit_interval_support": "1.0000000 and 0.0000000 fit precisely without overflow.",
+    "resolution": "0.0000001 (1e-7 or 0.00001%), sufficient for sub-basis-point risk calibration.",
+    "check_constraints": [
+      "chk_fraud_predictions_calibrated_prob_range: calibrated_fraud_probability >= 0.0 AND calibrated_fraud_probability <= 1.0",
+      "chk_fraud_predictions_raw_prob_range: raw_fraud_probability >= 0.0 AND raw_fraud_probability <= 1.0"
+    ],
+    "verification_status": "VERIFIED_CORRECT"
+  },
+  "legacy_trigger_compatibility_status": {
+    "trigger_name": "trg_sync_fraud_predictions_compatibility",
+    "compatibility_nature": "INTENTIONALLY_LOSSY_COMPATIBILITY_PROJECTION",
+    "lossy_explanation": "Phase 2 establishes 4 canonical risk tiers and 4 operational actions, whereas legacy schemas supported only 3 bands ('LOW', 'REVIEW', 'HIGH') and 3 decisions ('ALLOW', 'MANUAL_REVIEW', 'BLOCK'). Projecting 4 canonical tiers into 3 legacy slots collapses distinctions and is mathematically non-injective (lossy). Canonical columns preserve full 4-tier fidelity.",
+    "canonical_to_legacy_band_projection": {
+      "LOW": "LOW",
+      "MEDIUM": "REVIEW (collapsed with HIGH)",
+      "HIGH": "REVIEW (collapsed with MEDIUM)",
+      "CRITICAL": "HIGH (mapped to legacy highest tier)"
+    },
+    "canonical_to_legacy_action_projection": {
+      "AUTO_APPROVE": "ALLOW",
+      "STEP_UP_AUTH": "MANUAL_REVIEW (collapsed with MANUAL_REVIEW)",
+      "MANUAL_REVIEW": "MANUAL_REVIEW (collapsed with STEP_UP_AUTH)",
+      "HARD_DECLINE": "BLOCK"
+    },
+    "legacy_to_canonical_band_projection": {
+      "LOW": "LOW",
+      "REVIEW": "HIGH (ambiguous fallback)",
+      "HIGH": "CRITICAL"
+    },
+    "legacy_to_canonical_action_projection": {
+      "ALLOW": "AUTO_APPROVE",
+      "MANUAL_REVIEW": "MANUAL_REVIEW",
+      "BLOCK": "HARD_DECLINE"
+    }
+  },
+  "fraud_feature_snapshots_integration_status": {
+    "status_statement": "Schema exists but application persistence is not yet integrated.",
+    "table_name": "public.fraud_feature_snapshots",
+    "schema_specification": {
+      "id": "BIGSERIAL PRIMARY KEY",
+      "transaction_id": "VARCHAR(64) NOT NULL UNIQUE REFERENCES public.fraud_transactions(transaction_id) ON DELETE CASCADE",
+      "feature_contract_version": "VARCHAR(20) NOT NULL DEFAULT '2.1.0'",
+      "model_version": "VARCHAR(50) NOT NULL DEFAULT '2.1.0'",
+      "feature_count": "INTEGER NOT NULL DEFAULT 62",
+      "features": "JSONB NOT NULL",
+      "created_at": "TIMESTAMPTZ NOT NULL DEFAULT now()"
+    },
+    "indexes": [
+      "idx_fraud_feature_snapshots_txn ON public.fraud_feature_snapshots(transaction_id)",
+      "idx_fraud_feature_snapshots_created_at ON public.fraud_feature_snapshots(created_at DESC)"
+    ],
+    "application_readiness": "Table DDL is prepared in migration; router integration deferred to subsequent runtime cutover step."
+  },
+  "prediction_persistence_flow_verification": {
+    "steps": [
+      {
+        "step": 1,
+        "operation": "Incoming transaction request",
+        "executing_component": "app/fraud_router.py (predict_fraud endpoint)",
+        "status": "OPERATIONAL"
+      },
+      {
+        "step": 2,
+        "operation": "User authentication",
+        "executing_component": "app/auth.py (get_current_user) & Supabase GoTrue Auth",
+        "status": "OPERATIONAL"
+      },
+      {
+        "step": 3,
+        "operation": "Duplicate transaction verification",
+        "executing_component": "app/fraud_router.py (querying fraud_transactions)",
+        "status": "OPERATIONAL"
+      },
+      {
+        "step": 4,
+        "operation": "Point-in-time entity state retrieval",
+        "executing_component": "app/fraud_feature_service.py (querying fraud_entity_state)",
+        "status": "OPERATIONAL"
+      },
+      {
+        "step": 5,
+        "operation": "Feature generation",
+        "executing_component": "app/fraud_feature_service.py (build_fraud_features)",
+        "status": "LEGACY_459_FEATURES",
+        "missing_integration": "Needs cutover to app/production_feature_definitions.py (62 features)."
+      },
+      {
+        "step": 6,
+        "operation": "Base model scoring",
+        "executing_component": "app/fraud_model_service.py (champion artifact)",
+        "status": "LEGACY_MODEL",
+        "missing_integration": "Needs cutover to models/aegisfin_xgboost_baseline_v2.pkl."
+      },
+      {
+        "step": 7,
+        "operation": "Probability calibration",
+        "executing_component": "app/fraud_model_service.py (in-artifact calibrator)",
+        "status": "LEGACY_CALIBRATOR",
+        "missing_integration": "Needs cutover to models/aegisfin_probability_calibrator_v2.pkl."
+      },
+      {
+        "step": 8,
+        "operation": "Risk policy evaluation",
+        "executing_component": "app/fraud_model_service.py (3-tier policy)",
+        "status": "LEGACY_POLICY",
+        "missing_integration": "Needs cutover to configs/fraud_risk_policy_v2.json (4 bands, 4 actions)."
+      },
+      {
+        "step": 9,
+        "operation": "Raw transaction persistence",
+        "executing_component": "app/fraud_router.py (insert into fraud_transactions)",
+        "status": "OPERATIONAL"
+      },
+      {
+        "step": 10,
+        "operation": "Fraud prediction persistence",
+        "executing_component": "app/fraud_router.py (insert into fraud_predictions)",
+        "status": "OPERATIONAL_LEGACY_COLUMNS",
+        "missing_integration": "Should explicitly populate raw_fraud_probability, calibrated_fraud_probability, risk_band, recommended_action."
+      },
+      {
+        "step": 11,
+        "operation": "Entity state update",
+        "executing_component": "app/fraud_feature_service.py (update_entity_state)",
+        "status": "OPERATIONAL"
+      },
+      {
+        "step": 12,
+        "operation": "Feature snapshot persistence",
+        "executing_component": "None",
+        "status": "NOT_INTEGRATED",
+        "missing_integration": "Router must insert 62 features into fraud_feature_snapshots."
+      }
+    ]
+  },
+  "version_metadata_manifest": {
+    "model_name": "aegisfin_xgboost_baseline_v2",
+    "model_version": "2.1.0",
+    "calibration_version": "2.1.0",
+    "calibrator_type": "sigmoid",
+    "policy_version": "2.0.0",
+    "feature_contract_version": "2.1.0",
+    "feature_count": 62
+  },
+  "rls_security_status": {
+    "status": "ENFORCED",
+    "tables_protected": [
+      "public.profiles",
+      "public.fraud_transactions",
+      "public.fraud_predictions",
+      "public.fraud_entity_state",
+      "public.fraud_feature_snapshots"
+    ],
+    "analyst_permissions": "SELECT (read-only for authenticated analysts)",
+    "service_role_permissions": "ALL (admin client bypasses RLS for high-throughput writes)",
+    "secret_key_leaks": "ZERO (SUPABASE_SECRET_KEY verified strictly server-side)"
+  },
+  "exact_files_modified_or_created": [
+    "supabase/migrations/20260921000001_phase2_fraud_schema_update.sql",
+    "scripts/verify_supabase_migration.py",
+    "tests/test_supabase_migration_v2.py",
+    "reports/supabase_schema_audit_v2.json",
+    "reports/supabase_schema_audit_v2.md",
+    "walkthrough.md"
+  ],
+  "migration_readiness_assessment": {
+    "ready_to_apply": true,
+    "prerequisites": "Requires human operator approval. Must not be automatically executed during review."
+  }
+}

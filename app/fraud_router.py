@@ -2,17 +2,27 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from .auth import get_current_user
-from .fraud_feature_service import build_fraud_features, get_fraud_feature_service, parse_timestamp, update_entity_state
+from .fraud_feature_service import (
+    fetch_historical_transactions,
+    parse_timestamp,
+    update_entity_state,
+)
 from .fraud_model_service import (
+    FraudModelArtifactError,
     FraudModelCalibrationError,
     FraudModelInferenceError,
     FraudModelSchemaError,
+    FraudPolicyError,
     get_fraud_model_service,
+)
+from .production_feature_definitions import (
+    VALID_FEATURE_NAMES,
+    generate_production_features,
 )
 from .schemas import FraudPredictionRequest, FraudPredictionResponse
 from .supabase_client import get_supabase_admin_client
@@ -50,47 +60,28 @@ def fraud_health():
 @router.post("/features/test")
 def fraud_features_test(transaction: Dict[str, Any]):
     """
-    Development-only endpoint verifying Phase 2 fraud feature engineering.
-    Returns feature count, schema validity, and non-sensitive sample features.
+    Development endpoint verifying Phase 2 62-feature production contract.
+    Returns feature count (62), contract validity, and production feature values.
     """
     try:
-        service = get_fraud_feature_service()
-        df = build_fraud_features(transaction)
-
-        sample_keys = [
-            "TransactionAmt",
-            "hour",
-            "weekday_index",
-            "is_weekend",
-            "is_night",
-            "TransactionAmt_log",
-            "TransactionAmt_cents",
-            "missing_count",
-            "uid_past_count",
-            "uid_past_mean_amt",
-            "uid_amount_ratio",
-            "uid_is_new",
-            "card1_past_count",
-            "card1_past_mean_amt",
-            "card1_is_new",
-            "ProductCD__freq",
-            "card4__freq",
-            "P_emaildomain__freq",
-        ]
-        sample_features = {k: float(df[k].values[0]) for k in sample_keys if k in df.columns}
-
+        features = generate_production_features(current_transaction=transaction, history=[])
         return {
-            "feature_count": int(df.shape[1]),
-            "expected_feature_count": 459,
-            "feature_schema_valid": bool(df.shape[1] == 459 and list(df.columns) == service.feature_names),
-            "sample_features": sample_features,
+            "feature_count": len(features),
+            "expected_feature_count": 62,
+            "feature_schema_valid": bool(
+                len(features) == 62 and list(features.keys()) == VALID_FEATURE_NAMES
+            ),
+            "sample_features": {
+                k: features[k] for k in list(features.keys())[:15]
+            },
+            "features": features,
         }
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"Feature engineering failed: {exc}") from exc
 
 
 # -----------------------------------------------------------------------------
-# Final Phase 2 Fraud Prediction Endpoint
+# Final Phase 2 Fraud Prediction Endpoint (Cutover to 62-Feature Pipeline)
 # -----------------------------------------------------------------------------
 @router.post(
     "/predict",
@@ -98,9 +89,10 @@ def fraud_features_test(transaction: Dict[str, Any]):
     status_code=status.HTTP_200_OK,
     summary="Evaluate live transaction for fraud risk",
     description=(
-        "Executes end-to-end fraud risk evaluation: reads historical point-in-time state, "
-        "constructs the 459 model features without leakage, performs calibrated XGBoost inference, "
-        "persists the transaction and prediction in Supabase, and updates entity history."
+        "Executes end-to-end Phase 2 fraud risk evaluation: queries historical point-in-time state, "
+        "constructs the frozen 62 production features without leakage, performs calibrated XGBoost v2 "
+        "inference, applies the 4-tier risk policy, persists the transaction, prediction, and 62-feature "
+        "audit snapshot in Supabase, and updates entity history."
     ),
 )
 def predict_fraud(
@@ -108,21 +100,23 @@ def predict_fraud(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """
-    Full Phase 2 Fraud Prediction Lifecycle:
+    Full Phase 2 Production Fraud Prediction Lifecycle:
     1. Authenticate user via Supabase Bearer token
-    2. Validate transaction request (amount >= 0, non-empty identifiers)
+    2. Validate transaction request
     3. Check transaction_id for duplicate submission (409 Conflict if duplicate)
-    4. Read historical state strictly prior to current transaction timestamp (anti-leakage)
-    5. Construct 459-dimensional feature vector
-    6. Validate model feature schema
-    7. Execute XGBoost champion model inference
-    8. Apply Platt probability calibration
-    9. Apply dynamic policy thresholds (LOW, REVIEW, HIGH)
-    10. Map operational decision (ALLOW, MANUAL_REVIEW, BLOCK)
+    4. Query historical state strictly prior to current transaction timestamp (anti-leakage)
+    5. Generate 62-dimensional production feature vector (Single Source of Truth)
+    6. Validate model feature schema (count == 62, ordering == VALID_FEATURE_NAMES)
+    7. Execute frozen XGBoost v2 base model inference
+    8. Apply frozen Platt sigmoid probability calibration
+    9. Apply frozen 4-tier policy thresholds (LOW, MEDIUM, HIGH, CRITICAL)
+    10. Map operational decision (AUTO_APPROVE, STEP_UP_AUTH, MANUAL_REVIEW, HARD_DECLINE)
+        plus legacy compatibility projections (ALLOW, MANUAL_REVIEW, BLOCK)
     11. Persist transaction in public.fraud_transactions
-    12. Persist prediction in public.fraud_predictions
-    13. Update public.fraud_entity_state aggregates
-    14. Return structured response (without exposing internal features or secrets)
+    12. Persist prediction in public.fraud_predictions (canonical + legacy compatibility)
+    13. Persist feature snapshot in public.fraud_feature_snapshots (62 features JSONB)
+    14. Update public.fraud_entity_state aggregates
+    15. Return structured response (canonical + legacy compatibility fields)
     """
     user_id = current_user.get("user_id", "unknown_user")
     txn_id = request.transaction_id
@@ -175,27 +169,35 @@ def predict_fraud(
         "country": request.country,
     }
 
-    # 4 & 5. Generate Leakage-Safe Features (Current transaction NOT yet in database)
+    # 4. Query Prior History (Strict Anti-Leakage: strictly timestamp < current timestamp)
+    # The current transaction is NOT yet persisted in database, ensuring strict anti-leakage.
     try:
-        features_df = build_fraud_features(txn_dict)
+        history = fetch_historical_transactions(txn_dict, client=admin)
     except Exception as exc:
-        logger.error(f"Feature engineering failed for transaction '{txn_id}': {exc}")
+        logger.warning(f"Failed to retrieve history for '{txn_id}': {exc}. Defaulting to empty history.")
+        history = []
+
+    # 5. Generate 62 Production Features using frozen contract generator
+    try:
+        features_dict = generate_production_features(current_transaction=txn_dict, history=history)
+    except Exception as exc:
+        logger.error(f"Production feature generation failed for transaction '{txn_id}': {exc}")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Fraud feature engineering failed: {exc}",
         ) from exc
 
-    # 6, 7, 8, 9, 10. Model Inference, Platt Calibration & Policy Assignment
+    # 6 & 7. Frozen Model Inference, Platt Sigmoid Calibration & Risk Policy Assignment
     try:
         model_service = get_fraud_model_service()
-        pred_result = model_service.predict(features_df)
+        pred_result = model_service.predict(features_dict)
     except FraudModelSchemaError as exc:
         logger.error(f"Feature schema error for transaction '{txn_id}': {exc}")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
         ) from exc
-    except (FraudModelCalibrationError, FraudModelInferenceError) as exc:
+    except (FraudModelCalibrationError, FraudModelInferenceError, FraudPolicyError) as exc:
         logger.error(f"Model prediction error for transaction '{txn_id}': {exc}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -210,12 +212,13 @@ def predict_fraud(
 
     # Safe log of decision (NEVER log tokens or secrets)
     logger.info(
-        f"Fraud evaluated: transaction_id='{txn_id}', user_id='{user_id}', "
-        f"band='{pred_result['fraud_band']}', prob={pred_result['fraud_probability']:.4f}, "
-        f"latency={pred_result['inference_latency_ms']:.2f}ms"
+        f"Fraud evaluated (Phase 2): transaction_id='{txn_id}', user_id='{user_id}', "
+        f"risk_band='{pred_result['risk_band']}', action='{pred_result['recommended_action']}', "
+        f"calibrated_prob={pred_result['calibrated_fraud_probability']:.4f}, "
+        f"latency={pred_result['prediction_latency_ms']:.2f}ms"
     )
 
-    # 11. Save transaction in public.fraud_transactions (AFTER prediction)
+    # 8. Save transaction in public.fraud_transactions (AFTER prediction computation)
     raw_txn_record = {
         "transaction_id": txn_id,
         "customer_id": request.customer_id,
@@ -235,45 +238,72 @@ def predict_fraud(
         admin.table("fraud_transactions").insert(raw_txn_record).execute()
     except Exception as exc:
         logger.error(f"Failed to persist fraud transaction '{txn_id}': {exc}")
-        # Continue or raise; per requirements, saving transaction is required
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to persist fraud transaction record.",
         ) from exc
 
-    # 12. Save prediction in public.fraud_predictions
+    # 9. Save prediction in public.fraud_predictions
     raw_pred_record = {
         "transaction_id": txn_id,
         "model_name": pred_result["model_name"],
         "model_version": pred_result["model_version"],
         "calibration_version": pred_result["calibration_version"],
         "policy_version": pred_result["policy_version"],
+        # Legacy compatibility columns
         "fraud_probability": float(pred_result["fraud_probability"]),
         "fraud_band": pred_result["fraud_band"],
         "decision": pred_result["decision"],
-        "prediction_latency_ms": float(pred_result["inference_latency_ms"]),
+        "prediction_latency_ms": float(pred_result["prediction_latency_ms"]),
+        # Canonical Phase 2 columns
+        "raw_fraud_probability": float(pred_result["raw_fraud_probability"]),
+        "calibrated_fraud_probability": float(pred_result["calibrated_fraud_probability"]),
+        "risk_band": pred_result["risk_band"],
+        "recommended_action": pred_result["recommended_action"],
+        "feature_contract_version": pred_result["feature_contract_version"],
+        "calibrator_type": pred_result["calibrator_type"],
+        "scored_at": pred_result["scored_at"],
     }
 
     try:
         admin.table("fraud_predictions").insert(raw_pred_record).execute()
     except Exception as exc:
         logger.error(f"Failed to persist fraud prediction for '{txn_id}': {exc}")
-        # Note: transaction already saved, clean up or raise
-        admin.table("fraud_transactions").delete().eq("transaction_id", txn_id).execute()
+        # Clean up transaction to avoid orphaned transaction record
+        try:
+            admin.table("fraud_transactions").delete().eq("transaction_id", txn_id).execute()
+        except Exception:
+            pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to persist fraud prediction record.",
         ) from exc
 
-    # 13. Update Entity State (AFTER features generated & prediction stored)
+    # 10. Save Feature Snapshot in public.fraud_feature_snapshots
+    snapshot_record = {
+        "transaction_id": txn_id,
+        "feature_contract_version": pred_result["feature_contract_version"],
+        "model_version": pred_result["model_version"],
+        "feature_count": 62,
+        "features": features_dict,
+        "created_at": pred_result["scored_at"],
+    }
+
+    try:
+        admin.table("fraud_feature_snapshots").insert(snapshot_record).execute()
+    except Exception as exc:
+        logger.warning(f"Failed to persist feature snapshot for '{txn_id}': {exc}")
+
+    # 11. Update Entity State in public.fraud_entity_state (AFTER feature generation and prediction)
     try:
         update_entity_state(txn_dict)
     except Exception as exc:
         logger.warning(f"Entity state update encountered an issue for '{txn_id}': {exc}")
 
-    # 14. Return structured response
+    # 12. Return structured response with Canonical and Legacy fields
     return FraudPredictionResponse(
         transaction_id=txn_id,
+        # Legacy compatibility fields
         fraud_probability=pred_result["fraud_probability"],
         fraud_band=pred_result["fraud_band"],
         decision=pred_result["decision"],
@@ -281,10 +311,18 @@ def predict_fraud(
         model_version=pred_result["model_version"],
         calibration_version=pred_result["calibration_version"],
         policy_version=pred_result["policy_version"],
-        prediction_latency_ms=pred_result["inference_latency_ms"],
+        prediction_latency_ms=pred_result["prediction_latency_ms"],
         raw_probability=pred_result["raw_probability"],
         calibration_method=pred_result["calibration_method"],
         feature_count=pred_result["feature_count"],
+        # Canonical Phase 2 fields
+        raw_fraud_probability=pred_result["raw_fraud_probability"],
+        calibrated_fraud_probability=pred_result["calibrated_fraud_probability"],
+        risk_band=pred_result["risk_band"],
+        recommended_action=pred_result["recommended_action"],
+        feature_contract_version=pred_result["feature_contract_version"],
+        calibrator_type=pred_result["calibrator_type"],
+        scored_at=pred_result["scored_at"],
     )
 
 
@@ -305,7 +343,11 @@ def get_fraud_history(
     try:
         pred_res = (
             admin.table("fraud_predictions")
-            .select("transaction_id, model_version, fraud_probability, fraud_band, decision, prediction_latency_ms, created_at")
+            .select(
+                "transaction_id, model_version, fraud_probability, fraud_band, decision, "
+                "prediction_latency_ms, created_at, raw_fraud_probability, "
+                "calibrated_fraud_probability, risk_band, recommended_action"
+            )
             .order("created_at", desc=True)
             .range(offset, offset + limit - 1)
             .execute()
@@ -336,8 +378,13 @@ def get_fraud_history(
                 "fraud_probability": float(p.get("fraud_probability", 0.0)),
                 "fraud_band": p.get("fraud_band", "LOW"),
                 "decision": p.get("decision", "ALLOW"),
-                "model_version": p.get("model_version", "phase2-xgb-v1"),
+                "model_version": p.get("model_version", "2.1.0"),
                 "prediction_latency_ms": float(p.get("prediction_latency_ms", 0.0)),
+                # Canonical fields
+                "raw_fraud_probability": float(p.get("raw_fraud_probability", 0.0)) if p.get("raw_fraud_probability") is not None else None,
+                "calibrated_fraud_probability": float(p.get("calibrated_fraud_probability", 0.0)) if p.get("calibrated_fraud_probability") is not None else None,
+                "risk_band": p.get("risk_band"),
+                "recommended_action": p.get("recommended_action"),
             })
 
         return {"items": items, "count": len(items)}
@@ -362,7 +409,10 @@ def get_fraud_high_risk(
     try:
         pred_res = (
             admin.table("fraud_predictions")
-            .select("transaction_id, model_version, fraud_probability, fraud_band, decision, created_at")
+            .select(
+                "transaction_id, model_version, fraud_probability, fraud_band, decision, created_at, "
+                "raw_fraud_probability, calibrated_fraud_probability, risk_band, recommended_action"
+            )
             .in_("fraud_band", ["HIGH", "REVIEW"])
             .order("created_at", desc=True)
             .limit(limit)
@@ -393,7 +443,9 @@ def get_fraud_high_risk(
                 "fraud_probability": float(p.get("fraud_probability", 0.0)),
                 "fraud_band": p.get("fraud_band", "HIGH"),
                 "decision": p.get("decision", "BLOCK"),
-                "model_version": p.get("model_version", "phase2-xgb-v1"),
+                "model_version": p.get("model_version", "2.1.0"),
+                "risk_band": p.get("risk_band"),
+                "recommended_action": p.get("recommended_action"),
             })
 
         return {"items": items, "count": len(items)}

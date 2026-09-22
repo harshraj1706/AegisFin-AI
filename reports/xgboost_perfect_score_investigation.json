@@ -1,0 +1,956 @@
+{
+  "timestamp_utc": "2026-09-21 04:06:38 UTC",
+  "investigation_focus": "Root Cause Analysis of 1.0000 PR-AUC / ROC-AUC in XGBoost Baseline",
+  "dataset_splits_evaluated": {
+    "train": {
+      "rows": 60000,
+      "fraud": 4415
+    },
+    "validation": {
+      "rows": 10000,
+      "fraud": 1065
+    }
+  },
+  "top_features_investigated": {
+    "device_tx_count_1h": {
+      "train_legit_range": [
+        0.0,
+        2.0
+      ],
+      "train_fraud_range": [
+        0.0,
+        19.0
+      ],
+      "train_legit_median": 0.0,
+      "train_fraud_median": 3.0,
+      "train_has_overlap": true,
+      "train_legit_in_fraud_range": 55585,
+      "train_legit_in_fraud_range_pct": 100.0,
+      "train_fraud_in_legit_range": 2060,
+      "train_fraud_in_legit_range_pct": 46.66,
+      "val_legit_range": [
+        0.0,
+        2.0
+      ],
+      "val_fraud_range": [
+        0.0,
+        13.0
+      ],
+      "val_legit_median": 0.0,
+      "val_fraud_median": 3.0,
+      "val_has_overlap": true,
+      "val_legit_in_fraud_range": 8935,
+      "val_legit_in_fraud_range_pct": 100.0,
+      "val_fraud_in_legit_range": 530,
+      "val_fraud_in_legit_range_pct": 49.77
+    },
+    "merchant_tx_count_1h": {
+      "train_legit_range": [
+        0.0,
+        11.0
+      ],
+      "train_fraud_range": [
+        0.0,
+        18.0
+      ],
+      "train_legit_median": 0.0,
+      "train_fraud_median": 3.0,
+      "train_has_overlap": true,
+      "train_legit_in_fraud_range": 55585,
+      "train_legit_in_fraud_range_pct": 100.0,
+      "train_fraud_in_legit_range": 4361,
+      "train_fraud_in_legit_range_pct": 98.78,
+      "val_legit_range": [
+        0.0,
+        7.0
+      ],
+      "val_fraud_range": [
+        0.0,
+        13.0
+      ],
+      "val_legit_median": 0.0,
+      "val_fraud_median": 3.0,
+      "val_has_overlap": true,
+      "val_legit_in_fraud_range": 8935,
+      "val_legit_in_fraud_range_pct": 100.0,
+      "val_fraud_in_legit_range": 950,
+      "val_fraud_in_legit_range_pct": 89.2
+    },
+    "ip_tx_count_1h": {
+      "train_legit_range": [
+        0.0,
+        2.0
+      ],
+      "train_fraud_range": [
+        0.0,
+        18.0
+      ],
+      "train_legit_median": 0.0,
+      "train_fraud_median": 3.0,
+      "train_has_overlap": true,
+      "train_legit_in_fraud_range": 55585,
+      "train_legit_in_fraud_range_pct": 100.0,
+      "train_fraud_in_legit_range": 2063,
+      "train_fraud_in_legit_range_pct": 46.73,
+      "val_legit_range": [
+        0.0,
+        2.0
+      ],
+      "val_fraud_range": [
+        0.0,
+        13.0
+      ],
+      "val_legit_median": 0.0,
+      "val_fraud_median": 3.0,
+      "val_has_overlap": true,
+      "val_legit_in_fraud_range": 8935,
+      "val_legit_in_fraud_range_pct": 100.0,
+      "val_fraud_in_legit_range": 530,
+      "val_fraud_in_legit_range_pct": 49.77
+    },
+    "customer_device_seen_before": {
+      "train_legit_range": [
+        0.0,
+        1.0
+      ],
+      "train_fraud_range": [
+        0.0,
+        1.0
+      ],
+      "train_legit_median": 1.0,
+      "train_fraud_median": 1.0,
+      "train_has_overlap": true,
+      "train_legit_in_fraud_range": 55585,
+      "train_legit_in_fraud_range_pct": 100.0,
+      "train_fraud_in_legit_range": 4415,
+      "train_fraud_in_legit_range_pct": 100.0,
+      "val_legit_range": [
+        0.0,
+        1.0
+      ],
+      "val_fraud_range": [
+        0.0,
+        1.0
+      ],
+      "val_legit_median": 1.0,
+      "val_fraud_median": 1.0,
+      "val_has_overlap": true,
+      "val_legit_in_fraud_range": 8935,
+      "val_legit_in_fraud_range_pct": 100.0,
+      "val_fraud_in_legit_range": 1065,
+      "val_fraud_in_legit_range_pct": 100.0
+    },
+    "customer_ip_seen_before": {
+      "train_legit_range": [
+        0.0,
+        1.0
+      ],
+      "train_fraud_range": [
+        0.0,
+        1.0
+      ],
+      "train_legit_median": 1.0,
+      "train_fraud_median": 1.0,
+      "train_has_overlap": true,
+      "train_legit_in_fraud_range": 55585,
+      "train_legit_in_fraud_range_pct": 100.0,
+      "train_fraud_in_legit_range": 4415,
+      "train_fraud_in_legit_range_pct": 100.0,
+      "val_legit_range": [
+        0.0,
+        1.0
+      ],
+      "val_fraud_range": [
+        0.0,
+        1.0
+      ],
+      "val_legit_median": 1.0,
+      "val_fraud_median": 1.0,
+      "val_has_overlap": true,
+      "val_legit_in_fraud_range": 8935,
+      "val_legit_in_fraud_range_pct": 100.0,
+      "val_fraud_in_legit_range": 1065,
+      "val_fraud_in_legit_range_pct": 100.0
+    },
+    "card_ip_seen_before": {
+      "train_legit_range": [
+        0.0,
+        1.0
+      ],
+      "train_fraud_range": [
+        0.0,
+        1.0
+      ],
+      "train_legit_median": 1.0,
+      "train_fraud_median": 1.0,
+      "train_has_overlap": true,
+      "train_legit_in_fraud_range": 55585,
+      "train_legit_in_fraud_range_pct": 100.0,
+      "train_fraud_in_legit_range": 4415,
+      "train_fraud_in_legit_range_pct": 100.0,
+      "val_legit_range": [
+        0.0,
+        1.0
+      ],
+      "val_fraud_range": [
+        0.0,
+        1.0
+      ],
+      "val_legit_median": 1.0,
+      "val_fraud_median": 1.0,
+      "val_has_overlap": true,
+      "val_legit_in_fraud_range": 8935,
+      "val_legit_in_fraud_range_pct": 100.0,
+      "val_fraud_in_legit_range": 1065,
+      "val_fraud_in_legit_range_pct": 100.0
+    }
+  },
+  "single_feature_threshold_audits": [
+    {
+      "feature_name": "device_tx_count_1h",
+      "pr_auc": 0.8385,
+      "roc_auc": 0.9166,
+      "optimal_threshold": 0.5,
+      "rule_direction": ">=",
+      "best_f1_score": 0.871,
+      "perfect_separation": false,
+      "confusion_matrix_at_best_t": {
+        "tp": 891,
+        "fp": 90,
+        "tn": 8845,
+        "fn": 174
+      }
+    },
+    {
+      "feature_name": "ip_tx_count_1h",
+      "pr_auc": 0.8377,
+      "roc_auc": 0.9165,
+      "optimal_threshold": 0.5,
+      "rule_direction": ">=",
+      "best_f1_score": 0.8688,
+      "perfect_separation": false,
+      "confusion_matrix_at_best_t": {
+        "tp": 891,
+        "fp": 95,
+        "tn": 8840,
+        "fn": 174
+      }
+    },
+    {
+      "feature_name": "merchant_tx_count_1h",
+      "pr_auc": 0.7841,
+      "roc_auc": 0.9151,
+      "optimal_threshold": 1.5,
+      "rule_direction": ">=",
+      "best_f1_score": 0.7993,
+      "perfect_separation": false,
+      "confusion_matrix_at_best_t": {
+        "tp": 733,
+        "fp": 36,
+        "tn": 8899,
+        "fn": 332
+      }
+    },
+    {
+      "feature_name": "device_tx_count_24h",
+      "pr_auc": 0.7105,
+      "roc_auc": 0.8841,
+      "optimal_threshold": 1.5,
+      "rule_direction": ">=",
+      "best_f1_score": 0.7292,
+      "perfect_separation": false,
+      "confusion_matrix_at_best_t": {
+        "tp": 723,
+        "fp": 195,
+        "tn": 8740,
+        "fn": 342
+      }
+    },
+    {
+      "feature_name": "ip_tx_count_24h",
+      "pr_auc": 0.6967,
+      "roc_auc": 0.879,
+      "optimal_threshold": 1.5,
+      "rule_direction": ">=",
+      "best_f1_score": 0.7095,
+      "perfect_separation": false,
+      "confusion_matrix_at_best_t": {
+        "tp": 723,
+        "fp": 250,
+        "tn": 8685,
+        "fn": 342
+      }
+    },
+    {
+      "feature_name": "customer_merchant_tx_count",
+      "pr_auc": 0.6844,
+      "roc_auc": 0.8314,
+      "optimal_threshold": 0.5,
+      "rule_direction": ">=",
+      "best_f1_score": 0.7717,
+      "perfect_separation": false,
+      "confusion_matrix_at_best_t": {
+        "tp": 710,
+        "fp": 65,
+        "tn": 8870,
+        "fn": 355
+      }
+    },
+    {
+      "feature_name": "ip_tx_count_5m",
+      "pr_auc": 0.6733,
+      "roc_auc": 0.8173,
+      "optimal_threshold": 0.5,
+      "rule_direction": ">=",
+      "best_f1_score": 0.7761,
+      "perfect_separation": false,
+      "confusion_matrix_at_best_t": {
+        "tp": 676,
+        "fp": 1,
+        "tn": 8934,
+        "fn": 389
+      }
+    },
+    {
+      "feature_name": "device_tx_count_5m",
+      "pr_auc": 0.6729,
+      "roc_auc": 0.8173,
+      "optimal_threshold": 0.5,
+      "rule_direction": ">=",
+      "best_f1_score": 0.7757,
+      "perfect_separation": false,
+      "confusion_matrix_at_best_t": {
+        "tp": 676,
+        "fp": 2,
+        "tn": 8933,
+        "fn": 389
+      }
+    },
+    {
+      "feature_name": "customer_merchant_is_new",
+      "pr_auc": 0.6463,
+      "roc_auc": 0.8297,
+      "optimal_threshold": 0.5,
+      "rule_direction": "<=",
+      "best_f1_score": 0.7717,
+      "perfect_separation": false,
+      "confusion_matrix_at_best_t": {
+        "tp": 710,
+        "fp": 65,
+        "tn": 8870,
+        "fn": 355
+      }
+    },
+    {
+      "feature_name": "customer_merchant_seen_before",
+      "pr_auc": 0.6463,
+      "roc_auc": 0.8297,
+      "optimal_threshold": 0.5,
+      "rule_direction": ">=",
+      "best_f1_score": 0.7717,
+      "perfect_separation": false,
+      "confusion_matrix_at_best_t": {
+        "tp": 710,
+        "fp": 65,
+        "tn": 8870,
+        "fn": 355
+      }
+    }
+  ],
+  "scenario_feature_breakdown": {
+    "Account Takeover": {
+      "total_count": 1180,
+      "fraud_count": 1180,
+      "legit_count": 0,
+      "feature_stats": {
+        "device_tx_count_1h": {
+          "mean": 1.4983,
+          "median": 1.5,
+          "min": 0.0,
+          "max": 3.0,
+          "zero_pct": 25.0
+        },
+        "ip_tx_count_1h": {
+          "mean": 1.4983,
+          "median": 1.5,
+          "min": 0.0,
+          "max": 3.0,
+          "zero_pct": 25.0
+        },
+        "merchant_tx_count_1h": {
+          "mean": 1.5754,
+          "median": 2.0,
+          "min": 0.0,
+          "max": 4.0,
+          "zero_pct": 23.14
+        },
+        "card_ip_seen_before": {
+          "mean": 0.75,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 25.0
+        },
+        "customer_ip_seen_before": {
+          "mean": 0.75,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 25.0
+        },
+        "customer_device_seen_before": {
+          "mean": 0.75,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 25.0
+        },
+        "amount": {
+          "mean": 1526.9062,
+          "median": 1538.38,
+          "min": 651.11,
+          "max": 2398.44,
+          "zero_pct": 0.0
+        }
+      }
+    },
+    "Burst Fraud": {
+      "total_count": 990,
+      "fraud_count": 990,
+      "legit_count": 0,
+      "feature_stats": {
+        "device_tx_count_1h": {
+          "mean": 1.997,
+          "median": 2.0,
+          "min": 0.0,
+          "max": 4.0,
+          "zero_pct": 20.0
+        },
+        "ip_tx_count_1h": {
+          "mean": 1.997,
+          "median": 2.0,
+          "min": 0.0,
+          "max": 4.0,
+          "zero_pct": 20.0
+        },
+        "merchant_tx_count_1h": {
+          "mean": 2.0859,
+          "median": 2.0,
+          "min": 0.0,
+          "max": 5.0,
+          "zero_pct": 18.18
+        },
+        "card_ip_seen_before": {
+          "mean": 0.8,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 20.0
+        },
+        "customer_ip_seen_before": {
+          "mean": 0.8,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 20.0
+        },
+        "customer_device_seen_before": {
+          "mean": 0.8,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 20.0
+        },
+        "amount": {
+          "mean": 755.7758,
+          "median": 756.035,
+          "min": 300.35,
+          "max": 1198.23,
+          "zero_pct": 0.0
+        }
+      }
+    },
+    "Card Testing": {
+      "total_count": 1130,
+      "fraud_count": 1130,
+      "legit_count": 0,
+      "feature_stats": {
+        "device_tx_count_1h": {
+          "mean": 4.5796,
+          "median": 5.0,
+          "min": 0.0,
+          "max": 19.0,
+          "zero_pct": 9.91
+        },
+        "ip_tx_count_1h": {
+          "mean": 4.4912,
+          "median": 4.5,
+          "min": 0.0,
+          "max": 9.0,
+          "zero_pct": 10.0
+        },
+        "merchant_tx_count_1h": {
+          "mean": 4.5796,
+          "median": 5.0,
+          "min": 0.0,
+          "max": 11.0,
+          "zero_pct": 9.2
+        },
+        "card_ip_seen_before": {
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "zero_pct": 100.0
+        },
+        "customer_ip_seen_before": {
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "zero_pct": 100.0
+        },
+        "customer_device_seen_before": {
+          "mean": 0.0,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "zero_pct": 100.0
+        },
+        "amount": {
+          "mean": 2.3159,
+          "median": 1.5,
+          "min": 0.99,
+          "max": 4.99,
+          "zero_pct": 0.0
+        }
+      }
+    },
+    "Legitimate High-Value": {
+      "total_count": 2340,
+      "fraud_count": 0,
+      "legit_count": 2340,
+      "feature_stats": {
+        "device_tx_count_1h": {
+          "mean": 0.0111,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 98.89
+        },
+        "ip_tx_count_1h": {
+          "mean": 0.0115,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 98.85
+        },
+        "merchant_tx_count_1h": {
+          "mean": 0.0876,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 5.0,
+          "zero_pct": 92.35
+        },
+        "card_ip_seen_before": {
+          "mean": 0.9543,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 4.57
+        },
+        "customer_ip_seen_before": {
+          "mean": 0.9611,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 3.89
+        },
+        "customer_device_seen_before": {
+          "mean": 0.9538,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 4.62
+        },
+        "amount": {
+          "mean": 2153.052,
+          "median": 2178.475,
+          "min": 800.59,
+          "max": 3498.12,
+          "zero_pct": 0.0
+        }
+      }
+    },
+    "Legitimate Stable": {
+      "total_count": 62180,
+      "fraud_count": 0,
+      "legit_count": 62180,
+      "feature_stats": {
+        "device_tx_count_1h": {
+          "mean": 0.0089,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 2.0,
+          "zero_pct": 99.12
+        },
+        "ip_tx_count_1h": {
+          "mean": 0.0101,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 2.0,
+          "zero_pct": 99.0
+        },
+        "merchant_tx_count_1h": {
+          "mean": 0.0761,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 11.0,
+          "zero_pct": 93.15
+        },
+        "card_ip_seen_before": {
+          "mean": 0.7947,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 20.53
+        },
+        "customer_ip_seen_before": {
+          "mean": 0.8119,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 18.81
+        },
+        "customer_device_seen_before": {
+          "mean": 0.8187,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 18.13
+        },
+        "amount": {
+          "mean": 67.8877,
+          "median": 62.45,
+          "min": 3.5,
+          "max": 247.21,
+          "zero_pct": 0.0
+        }
+      }
+    },
+    "Shared Device / IP Ring": {
+      "total_count": 1200,
+      "fraud_count": 1200,
+      "legit_count": 0,
+      "feature_stats": {
+        "device_tx_count_1h": {
+          "mean": 6.4517,
+          "median": 7.0,
+          "min": 0.0,
+          "max": 18.0,
+          "zero_pct": 3.42
+        },
+        "ip_tx_count_1h": {
+          "mean": 6.4517,
+          "median": 7.0,
+          "min": 0.0,
+          "max": 18.0,
+          "zero_pct": 3.42
+        },
+        "merchant_tx_count_1h": {
+          "mean": 6.5308,
+          "median": 7.0,
+          "min": 0.0,
+          "max": 18.0,
+          "zero_pct": 3.33
+        },
+        "card_ip_seen_before": {
+          "mean": 0.8,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 20.0
+        },
+        "customer_ip_seen_before": {
+          "mean": 0.8,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 20.0
+        },
+        "customer_device_seen_before": {
+          "mean": 0.8008,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 19.92
+        },
+        "amount": {
+          "mean": 541.386,
+          "median": 529.105,
+          "min": 150.53,
+          "max": 949.38,
+          "zero_pct": 0.0
+        }
+      }
+    },
+    "Stolen Card": {
+      "total_count": 980,
+      "fraud_count": 980,
+      "legit_count": 0,
+      "feature_stats": {
+        "device_tx_count_1h": {
+          "mean": 1.999,
+          "median": 2.0,
+          "min": 0.0,
+          "max": 4.0,
+          "zero_pct": 20.0
+        },
+        "ip_tx_count_1h": {
+          "mean": 1.999,
+          "median": 2.0,
+          "min": 0.0,
+          "max": 4.0,
+          "zero_pct": 20.0
+        },
+        "merchant_tx_count_1h": {
+          "mean": 2.0939,
+          "median": 2.0,
+          "min": 0.0,
+          "max": 6.0,
+          "zero_pct": 18.16
+        },
+        "card_ip_seen_before": {
+          "mean": 0.8,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 20.0
+        },
+        "customer_ip_seen_before": {
+          "mean": 0.8,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 20.0
+        },
+        "customer_device_seen_before": {
+          "mean": 0.8,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "zero_pct": 20.0
+        },
+        "amount": {
+          "mean": 1128.6219,
+          "median": 1129.45,
+          "min": 450.55,
+          "max": 1799.07,
+          "zero_pct": 0.0
+        }
+      }
+    }
+  },
+  "temporal_drift": {
+    "device_tx_count_1h": {
+      "fraud": {
+        "train_mean": 3.4761,
+        "val_mean": 3.0742,
+        "mean_abs_diff": 0.4019,
+        "train_median": 3.0,
+        "val_median": 3.0
+      },
+      "legitimate": {
+        "train_mean": 0.0088,
+        "val_mean": 0.0102,
+        "mean_abs_diff": 0.0014,
+        "train_median": 0.0,
+        "val_median": 0.0
+      }
+    },
+    "ip_tx_count_1h": {
+      "fraud": {
+        "train_mean": 3.4535,
+        "val_mean": 3.0742,
+        "mean_abs_diff": 0.3793,
+        "train_median": 3.0,
+        "val_median": 3.0
+      },
+      "legitimate": {
+        "train_mean": 0.01,
+        "val_mean": 0.0107,
+        "mean_abs_diff": 0.0007,
+        "train_median": 0.0,
+        "val_median": 0.0
+      }
+    },
+    "card_ip_seen_before": {
+      "fraud": {
+        "train_mean": 0.6143,
+        "val_mean": 0.6657,
+        "mean_abs_diff": 0.0515,
+        "train_median": 1.0,
+        "val_median": 1.0
+      },
+      "legitimate": {
+        "train_mean": 0.7791,
+        "val_mean": 0.9335,
+        "mean_abs_diff": 0.1544,
+        "train_median": 1.0,
+        "val_median": 1.0
+      }
+    },
+    "merchant_tx_count_1h": {
+      "fraud": {
+        "train_mean": 3.5336,
+        "val_mean": 3.1803,
+        "mean_abs_diff": 0.3534,
+        "train_median": 3.0,
+        "val_median": 3.0
+      },
+      "legitimate": {
+        "train_mean": 0.0767,
+        "val_mean": 0.0751,
+        "mean_abs_diff": 0.0016,
+        "train_median": 0.0,
+        "val_median": 0.0
+      }
+    },
+    "amount": {
+      "fraud": {
+        "train_mean": 780.6838,
+        "val_mean": 808.9936,
+        "mean_abs_diff": 28.3098,
+        "train_median": 731.63,
+        "val_median": 746.16
+      },
+      "legitimate": {
+        "train_mean": 140.9934,
+        "val_mean": 159.181,
+        "mean_abs_diff": 18.1875,
+        "train_median": 64.3,
+        "val_median": 64.85
+      }
+    }
+  },
+  "ablation_experiments": [
+    {
+      "experiment_name": "Baseline (All 62 Features)",
+      "feature_count": 62,
+      "pr_auc": 1.0,
+      "roc_auc": 1.0,
+      "f1_score_at_0_50": 1.0,
+      "precision_at_0_50": 1.0,
+      "recall_at_0_50": 1.0,
+      "log_loss": 5.1e-05,
+      "brier_score": 2e-06,
+      "confusion_matrix": {
+        "tp": 1065,
+        "fp": 0,
+        "tn": 8935,
+        "fn": 0
+      },
+      "top_3_features": [
+        "device_tx_count_1h (0.407)",
+        "ip_tx_count_1h (0.403)",
+        "card_ip_seen_before (0.060)"
+      ]
+    },
+    {
+      "experiment_name": "Ablation A: Remove Device Features (6 dropped)",
+      "feature_count": 56,
+      "pr_auc": 1.0,
+      "roc_auc": 1.0,
+      "f1_score_at_0_50": 1.0,
+      "precision_at_0_50": 1.0,
+      "recall_at_0_50": 1.0,
+      "log_loss": 2.7e-05,
+      "brier_score": 0.0,
+      "confusion_matrix": {
+        "tp": 1065,
+        "fp": 0,
+        "tn": 8935,
+        "fn": 0
+      },
+      "top_3_features": [
+        "ip_tx_count_1h (0.561)",
+        "ip_unique_devices_24h (0.095)",
+        "merchant_tx_count_1h (0.093)"
+      ]
+    },
+    {
+      "experiment_name": "Ablation B: Remove IP Features (7 dropped)",
+      "feature_count": 55,
+      "pr_auc": 1.0,
+      "roc_auc": 1.0,
+      "f1_score_at_0_50": 1.0,
+      "precision_at_0_50": 1.0,
+      "recall_at_0_50": 1.0,
+      "log_loss": 3.9e-05,
+      "brier_score": 1e-06,
+      "confusion_matrix": {
+        "tp": 1065,
+        "fp": 0,
+        "tn": 8935,
+        "fn": 0
+      },
+      "top_3_features": [
+        "device_tx_count_1h (0.595)",
+        "merchant_tx_count_1h (0.121)",
+        "card_ip_seen_before (0.050)"
+      ]
+    },
+    {
+      "experiment_name": "Ablation C: Remove Device AND IP Features (13 dropped)",
+      "feature_count": 49,
+      "pr_auc": 1.0,
+      "roc_auc": 1.0,
+      "f1_score_at_0_50": 1.0,
+      "precision_at_0_50": 1.0,
+      "recall_at_0_50": 1.0,
+      "log_loss": 5.3e-05,
+      "brier_score": 3e-06,
+      "confusion_matrix": {
+        "tp": 1065,
+        "fp": 0,
+        "tn": 8935,
+        "fn": 0
+      },
+      "top_3_features": [
+        "merchant_tx_count_1h (0.623)",
+        "card_ip_seen_before (0.072)",
+        "amount (0.069)"
+      ]
+    },
+    {
+      "experiment_name": "Ablation D: Remove ALL Velocity/Burst Features (27 dropped)",
+      "feature_count": 35,
+      "pr_auc": 1.0,
+      "roc_auc": 1.0,
+      "f1_score_at_0_50": 0.9991,
+      "precision_at_0_50": 0.9981,
+      "recall_at_0_50": 1.0,
+      "log_loss": 0.000439,
+      "brier_score": 0.000146,
+      "confusion_matrix": {
+        "tp": 1065,
+        "fp": 2,
+        "tn": 8933,
+        "fn": 0
+      },
+      "top_3_features": [
+        "amount_log (0.519)",
+        "amount (0.287)",
+        "customer_ip_seen_before (0.046)"
+      ]
+    }
+  ],
+  "investigation_conclusions": {
+    "is_synthetic_shortcut": true,
+    "primary_shortcut_mechanism": "Bot ring device/IP velocity and card testing bursts produce discrete velocity spikes with near-zero false positive rates on legitimate transactions.",
+    "single_feature_perfect_separators": [],
+    "natural_overlap_present": true,
+    "ablation_c_retains_high_performance": true,
+    "recommendation_for_generator": "Inject realistic legitimate high-frequency behavioral noise: e.g., legitimate multi-user household devices, office NAT/VPN IP sharing, legitimate shopping sprees / seasonal sales velocity, and low-velocity fraud (stealth ATO where fraudster uses normal cadence and residential proxies)."
+  }
+}

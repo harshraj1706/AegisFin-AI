@@ -1,0 +1,152 @@
+{
+  "policy_name": "aegisfin_fraud_risk_policy_v2",
+  "policy_version": "2.0.0",
+  "created_at_utc": "2026-09-21T08:19:59.965118+00:00",
+  "model_version": "2.1.0",
+  "base_model": "aegisfin_xgboost_baseline_v2",
+  "calibrator_version": "2.1.0",
+  "calibrator_type": "sigmoid",
+  "feature_contract_version": "2.1.0",
+  "feature_count": 62,
+  "governance_note": "Provisional AegisFin policy based on synthetic behavioral policy data. It does not establish real-world banking performance.",
+  "provisional_action_threshold": 0.5,
+  "threshold_rationale": "Standard probabilistic midpoint where calibrated posterior fraud probability exceeds 50%. Achieves 99.77% fraud recall (855/857) with only 4 false alarms out of 9,143 legitimate transactions (0.0437% FPR) and an F1 score of 0.9965 on the chronological policy partition.",
+  "candidate_operating_points": {
+    "candidate_a_max_recall": {
+      "name": "Candidate A: Maximum Fraud Recall (Zero Missed Fraud)",
+      "threshold": 0.306,
+      "precision": 0.9942,
+      "recall": 1.0,
+      "f1": 0.997091,
+      "fpr": 0.000547,
+      "fraud_capture_pct": 100.0,
+      "review_rate_pct": 8.62,
+      "tp": 857.0,
+      "fp": 5.0,
+      "tn": 9138.0,
+      "fn": 0.0,
+      "rationale": "Prioritizes 100% fraud loss prevention. Captures all 857 frauds in policy set with 6 false alarms (0.0656% FPR)."
+    },
+    "candidate_b_balanced_midpoint": {
+      "name": "Candidate B: Balanced Decision Midpoint (Provisional Standard)",
+      "threshold": 0.5,
+      "precision": 0.995343,
+      "recall": 0.997666,
+      "f1": 0.996503,
+      "fpr": 0.000437,
+      "fraud_capture_pct": 99.7666,
+      "review_rate_pct": 8.59,
+      "tp": 855.0,
+      "fp": 4.0,
+      "tn": 9139.0,
+      "fn": 2.0,
+      "rationale": "Natural Bayesian posterior midpoint where calibrated fraud probability exceeds 50%. Achieves 99.77% recall with only 4 false alarms out of 9,143 legit transactions."
+    },
+    "candidate_c_low_fpr": {
+      "name": "Candidate C: Ultra-Low False-Positive Rate (High-Confidence Auto-Decline)",
+      "threshold": 0.8,
+      "precision": 0.997655,
+      "recall": 0.992999,
+      "f1": 0.995322,
+      "fpr": 0.000219,
+      "fraud_capture_pct": 99.2999,
+      "review_rate_pct": 8.53,
+      "tp": 851.0,
+      "fp": 2.0,
+      "tn": 9141.0,
+      "fn": 6.0,
+      "rationale": "Optimized for automated hard blocks where false positives must be minimized to absolute lowest levels (only 2 false positives, 0.0219% FPR) while retaining 99.30% fraud capture."
+    }
+  },
+  "risk_bands": {
+    "LOW": {
+      "risk_band": "LOW",
+      "probability_range": [
+        0.0,
+        0.1
+      ],
+      "probability_range_label": "[0.00, 0.10)",
+      "operational_action": "AUTO_APPROVE",
+      "action_description": "Immediate clearing with frictionless customer experience.",
+      "transaction_count": 9134,
+      "percentage_of_transactions": 91.34,
+      "fraud_count": 0,
+      "legitimate_count": 9134,
+      "observed_fraud_rate": 0.0,
+      "observed_fraud_rate_pct": 0.0,
+      "fraud_capture_pct": 0.0,
+      "mean_calibrated_probability": 5.1e-05,
+      "min_calibrated_probability": 0.0,
+      "max_calibrated_probability": 0.088084
+    },
+    "MEDIUM": {
+      "risk_band": "MEDIUM",
+      "probability_range": [
+        0.1,
+        0.4
+      ],
+      "probability_range_label": "[0.10, 0.40)",
+      "operational_action": "STEP_UP_AUTH",
+      "action_description": "Automated step-up challenge (SMS OTP, biometrics, 3DS 2.0).",
+      "transaction_count": 6,
+      "percentage_of_transactions": 0.06,
+      "fraud_count": 2,
+      "legitimate_count": 4,
+      "observed_fraud_rate": 0.333333,
+      "observed_fraud_rate_pct": 33.33,
+      "fraud_capture_pct": 0.2334,
+      "mean_calibrated_probability": 0.261553,
+      "min_calibrated_probability": 0.138479,
+      "max_calibrated_probability": 0.393386
+    },
+    "HIGH": {
+      "risk_band": "HIGH",
+      "probability_range": [
+        0.4,
+        0.8
+      ],
+      "probability_range_label": "[0.40, 0.80)",
+      "operational_action": "MANUAL_REVIEW",
+      "action_description": "Routing to fraud risk analyst queue for investigation.",
+      "transaction_count": 7,
+      "percentage_of_transactions": 0.07,
+      "fraud_count": 4,
+      "legitimate_count": 3,
+      "observed_fraud_rate": 0.571429,
+      "observed_fraud_rate_pct": 57.14,
+      "fraud_capture_pct": 0.4667,
+      "mean_calibrated_probability": 0.656332,
+      "min_calibrated_probability": 0.401746,
+      "max_calibrated_probability": 0.782499
+    },
+    "CRITICAL": {
+      "risk_band": "CRITICAL",
+      "probability_range": [
+        0.8,
+        1.0
+      ],
+      "probability_range_label": "[0.80, 1.00]",
+      "operational_action": "HARD_DECLINE",
+      "action_description": "Automated immediate transaction rejection and account safeguard lock.",
+      "transaction_count": 853,
+      "percentage_of_transactions": 8.53,
+      "fraud_count": 851,
+      "legitimate_count": 2,
+      "observed_fraud_rate": 0.997655,
+      "observed_fraud_rate_pct": 99.77,
+      "fraud_capture_pct": 99.2999,
+      "mean_calibrated_probability": 0.996226,
+      "min_calibrated_probability": 0.806674,
+      "max_calibrated_probability": 0.999998
+    }
+  },
+  "policy_dataset_statistics": {
+    "file_path": "D:/AegisFin-AI_main_folder/AegisFin-AI-Phase1-Rich-Integration-Updated/AegisFin-AI-Phase1-Rich-Integration/data/behavioral/splits_v2/policy.csv",
+    "total_transactions": 10000,
+    "legitimate_count": 9143,
+    "fraud_count": 857,
+    "fraud_rate_pct": 8.57,
+    "start_timestamp_utc": "2026-02-06T02:12:50.525511+00:00",
+    "end_timestamp_utc": "2026-02-10T12:40:40.879628+00:00"
+  }
+}

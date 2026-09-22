@@ -1,0 +1,385 @@
+{
+  "report_type": "final_held_out_test_evaluation",
+  "governance_statement": "Final held-out evaluation of the AegisFin synthetic behavioral benchmark and engineering pipeline. It does not establish real-world banking production performance.",
+  "evaluation_timestamp_utc": "2026-09-21T08:34:16.434204+00:00",
+  "frozen_artifacts_manifest": {
+    "base_model": {
+      "path": "D:/AegisFin-AI_main_folder/AegisFin-AI-Phase1-Rich-Integration-Updated/AegisFin-AI-Phase1-Rich-Integration/models/aegisfin_xgboost_baseline_v2.pkl",
+      "status": "FROZEN_UNTOUCHED",
+      "architecture": "xgboost.XGBClassifier"
+    },
+    "calibrator": {
+      "path": "D:/AegisFin-AI_main_folder/AegisFin-AI-Phase1-Rich-Integration-Updated/AegisFin-AI-Phase1-Rich-Integration/models/aegisfin_probability_calibrator_v2.pkl",
+      "status": "FROZEN_UNTOUCHED",
+      "method": "sigmoid"
+    },
+    "risk_policy": {
+      "path": "D:/AegisFin-AI_main_folder/AegisFin-AI-Phase1-Rich-Integration-Updated/AegisFin-AI-Phase1-Rich-Integration/configs/fraud_risk_policy_v2.json",
+      "status": "FROZEN_UNTOUCHED",
+      "policy_version": "2.0.0"
+    }
+  },
+  "test_dataset_validation": {
+    "path": "D:/AegisFin-AI_main_folder/AegisFin-AI-Phase1-Rich-Integration-Updated/AegisFin-AI-Phase1-Rich-Integration/data/behavioral/splits_v2/test.csv",
+    "total_transactions": 10000,
+    "legitimate_count": 9177,
+    "fraud_count": 823,
+    "fraud_rate_pct": 8.23,
+    "start_timestamp_utc": "2026-02-10T12:40:51.648317+00:00",
+    "end_timestamp_utc": "2026-02-14T23:59:08.245883+00:00",
+    "feature_count": 62,
+    "zero_nan_inf": true,
+    "chronological_integrity": true
+  },
+  "raw_model_metrics": {
+    "pr_auc": 0.999868,
+    "roc_auc": 0.999988,
+    "log_loss": 0.003173,
+    "brier_score": 0.000822,
+    "diagnostic_threshold_0_50": {
+      "threshold": 0.5,
+      "precision": 0.98917,
+      "recall": 0.998785,
+      "f1": 0.993954,
+      "true_positives": 822,
+      "false_positives": 9,
+      "true_negatives": 9168,
+      "false_negatives": 1,
+      "fpr": 0.000981,
+      "specificity": 0.999019
+    }
+  },
+  "calibrated_model_metrics": {
+    "method": "sigmoid",
+    "calibrated_pr_auc": 0.999868,
+    "calibrated_roc_auc": 0.999988,
+    "calibrated_log_loss": 0.002443,
+    "calibrated_brier_score": 0.000704,
+    "calibrated_ece": 0.000563,
+    "calibrated_mce": 0.666434,
+    "ten_bin_reliability_table": [
+      {
+        "bin_index": 1,
+        "bin_range": "0.0-0.1",
+        "count": 9167,
+        "fraud_count": 1,
+        "legitimate_count": 9166,
+        "mean_predicted_prob": 6.1e-05,
+        "observed_fraud_rate": 0.000109,
+        "calibration_gap": 4.8e-05
+      },
+      {
+        "bin_index": 2,
+        "bin_range": "0.1-0.2",
+        "count": 2,
+        "fraud_count": 0,
+        "legitimate_count": 2,
+        "mean_predicted_prob": 0.109305,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.109305
+      },
+      {
+        "bin_index": 3,
+        "bin_range": "0.2-0.3",
+        "count": 2,
+        "fraud_count": 1,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.243171,
+        "observed_fraud_rate": 0.5,
+        "calibration_gap": 0.256829
+      },
+      {
+        "bin_index": 4,
+        "bin_range": "0.3-0.4",
+        "count": 2,
+        "fraud_count": 1,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.330854,
+        "observed_fraud_rate": 0.5,
+        "calibration_gap": 0.169146
+      },
+      {
+        "bin_index": 5,
+        "bin_range": "0.4-0.5",
+        "count": 3,
+        "fraud_count": 1,
+        "legitimate_count": 2,
+        "mean_predicted_prob": 0.463628,
+        "observed_fraud_rate": 0.333333,
+        "calibration_gap": 0.130295
+      },
+      {
+        "bin_index": 6,
+        "bin_range": "0.5-0.6",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_index": 7,
+        "bin_range": "0.6-0.7",
+        "count": 1,
+        "fraud_count": 0,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.666434,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.666434
+      },
+      {
+        "bin_index": 8,
+        "bin_range": "0.7-0.8",
+        "count": 1,
+        "fraud_count": 1,
+        "legitimate_count": 0,
+        "mean_predicted_prob": 0.738271,
+        "observed_fraud_rate": 1.0,
+        "calibration_gap": 0.261729
+      },
+      {
+        "bin_index": 9,
+        "bin_range": "0.8-0.9",
+        "count": 4,
+        "fraud_count": 4,
+        "legitimate_count": 0,
+        "mean_predicted_prob": 0.856432,
+        "observed_fraud_rate": 1.0,
+        "calibration_gap": 0.143568
+      },
+      {
+        "bin_index": 10,
+        "bin_range": "0.9-1.0",
+        "count": 818,
+        "fraud_count": 814,
+        "legitimate_count": 4,
+        "mean_predicted_prob": 0.997839,
+        "observed_fraud_rate": 0.99511,
+        "calibration_gap": 0.002729
+      }
+    ]
+  },
+  "risk_band_performance": [
+    {
+      "risk_band": "LOW",
+      "probability_range": [
+        0.0,
+        0.1
+      ],
+      "probability_range_label": "[0.00, 0.10)",
+      "operational_action": "AUTO_APPROVE",
+      "action_description": "Frictionless automated clearance",
+      "transaction_count": 9167,
+      "percentage_of_transactions": 91.67,
+      "fraud_count": 1,
+      "legitimate_count": 9166,
+      "observed_fraud_rate": 0.000109,
+      "observed_fraud_rate_pct": 0.01,
+      "fraud_capture_pct": 0.1215,
+      "mean_calibrated_probability": 6.1e-05
+    },
+    {
+      "risk_band": "MEDIUM",
+      "probability_range": [
+        0.1,
+        0.4
+      ],
+      "probability_range_label": "[0.10, 0.40)",
+      "operational_action": "STEP_UP_AUTH",
+      "action_description": "Soft verification challenge (SMS OTP / 3DS 2.0)",
+      "transaction_count": 6,
+      "percentage_of_transactions": 0.06,
+      "fraud_count": 2,
+      "legitimate_count": 4,
+      "observed_fraud_rate": 0.333333,
+      "observed_fraud_rate_pct": 33.33,
+      "fraud_capture_pct": 0.243,
+      "mean_calibrated_probability": 0.227777
+    },
+    {
+      "risk_band": "HIGH",
+      "probability_range": [
+        0.4,
+        0.8
+      ],
+      "probability_range_label": "[0.40, 0.80)",
+      "operational_action": "MANUAL_REVIEW",
+      "action_description": "Human fraud analyst investigation queue",
+      "transaction_count": 5,
+      "percentage_of_transactions": 0.05,
+      "fraud_count": 2,
+      "legitimate_count": 3,
+      "observed_fraud_rate": 0.4,
+      "observed_fraud_rate_pct": 40.0,
+      "fraud_capture_pct": 0.243,
+      "mean_calibrated_probability": 0.559118
+    },
+    {
+      "risk_band": "CRITICAL",
+      "probability_range": [
+        0.8,
+        1.0
+      ],
+      "probability_range_label": "[0.80, 1.00]",
+      "operational_action": "HARD_DECLINE",
+      "action_description": "Automated immediate transaction rejection",
+      "transaction_count": 822,
+      "percentage_of_transactions": 8.22,
+      "fraud_count": 818,
+      "legitimate_count": 4,
+      "observed_fraud_rate": 0.995134,
+      "observed_fraud_rate_pct": 99.51,
+      "fraud_capture_pct": 99.3925,
+      "mean_calibrated_probability": 0.997151
+    }
+  ],
+  "action_level_performance": {
+    "AUTO_APPROVE": {
+      "action": "AUTO_APPROVE",
+      "associated_risk_band": "LOW",
+      "total_transactions": 9167,
+      "percentage_of_volume": 91.67,
+      "fraud_transactions": 1,
+      "legitimate_transactions": 9166,
+      "observed_fraud_rate_pct": 0.01,
+      "fraud_capture_pct": 0.1215,
+      "false_positives": 0,
+      "false_negatives": 1
+    },
+    "STEP_UP_AUTH": {
+      "action": "STEP_UP_AUTH",
+      "associated_risk_band": "MEDIUM",
+      "total_transactions": 6,
+      "percentage_of_volume": 0.06,
+      "fraud_transactions": 2,
+      "legitimate_transactions": 4,
+      "observed_fraud_rate_pct": 33.33,
+      "fraud_capture_pct": 0.243,
+      "false_positives": 0,
+      "false_negatives": 0
+    },
+    "MANUAL_REVIEW": {
+      "action": "MANUAL_REVIEW",
+      "associated_risk_band": "HIGH",
+      "total_transactions": 5,
+      "percentage_of_volume": 0.05,
+      "fraud_transactions": 2,
+      "legitimate_transactions": 3,
+      "observed_fraud_rate_pct": 40.0,
+      "fraud_capture_pct": 0.243,
+      "false_positives": 3,
+      "false_negatives": 0
+    },
+    "HARD_DECLINE": {
+      "action": "HARD_DECLINE",
+      "associated_risk_band": "CRITICAL",
+      "total_transactions": 822,
+      "percentage_of_volume": 8.22,
+      "fraud_transactions": 818,
+      "legitimate_transactions": 4,
+      "observed_fraud_rate_pct": 99.51,
+      "fraud_capture_pct": 99.3925,
+      "false_positives": 4,
+      "false_negatives": 0
+    }
+  },
+  "cross_benchmark_comparison": {
+    "v2_validation": {
+      "partition": "Development (Seed 42)",
+      "description": "Validation Set (splits_v2/validation.csv)",
+      "transactions": 10000,
+      "fraud_count": 1005,
+      "fraud_rate_pct": 10.05,
+      "raw_pr_auc": 0.999221,
+      "raw_roc_auc": 0.999924,
+      "raw_log_loss": 0.005001,
+      "raw_brier_score": 0.001024,
+      "precision_at_0_50": 0.989163,
+      "recall_at_0_50": 0.999005,
+      "f1_at_0_50": 0.994059,
+      "false_positives": 11,
+      "false_negatives": 1,
+      "calibrated_log_loss": "N/A",
+      "calibrated_ece": "N/A"
+    },
+    "v2_calibration": {
+      "partition": "Calibration (Seed 42)",
+      "description": "Calibration Set (splits_v2/calibration.csv)",
+      "transactions": 10000,
+      "fraud_count": 976,
+      "fraud_rate_pct": 9.76,
+      "raw_pr_auc": 0.999826,
+      "raw_roc_auc": 0.999982,
+      "raw_log_loss": 0.00207,
+      "raw_brier_score": 0.000437,
+      "precision_at_0_50": "N/A",
+      "recall_at_0_50": "N/A",
+      "f1_at_0_50": "N/A",
+      "false_positives": "N/A",
+      "false_negatives": "N/A",
+      "calibrated_log_loss": 0.001619,
+      "calibrated_ece": 0.000283
+    },
+    "v2_cross_seed_123": {
+      "partition": "Cross-Seed Robustness (Seed 123)",
+      "description": "Independent Dataset (100k_seed123.csv)",
+      "transactions": 100000,
+      "fraud_count": 8223,
+      "fraud_rate_pct": 8.223,
+      "raw_pr_auc": 0.999253,
+      "raw_roc_auc": 0.999935,
+      "raw_log_loss": 0.006203,
+      "raw_brier_score": 0.001511,
+      "precision_at_0_50": 0.981071,
+      "recall_at_0_50": 0.995865,
+      "f1_at_0_50": 0.988413,
+      "false_positives": 158,
+      "false_negatives": 34,
+      "calibrated_log_loss": 0.005248,
+      "calibrated_ece": 0.000742
+    },
+    "v2_policy_set": {
+      "partition": "Policy Optimization (Seed 42)",
+      "description": "Policy Set (splits_v2/policy.csv)",
+      "transactions": 10000,
+      "fraud_count": 857,
+      "fraud_rate_pct": 8.57,
+      "raw_pr_auc": 0.999983,
+      "raw_roc_auc": 0.999998,
+      "raw_log_loss": 0.002879,
+      "raw_brier_score": 0.000572,
+      "precision_at_0_50": 0.995343,
+      "recall_at_0_50": 0.997666,
+      "f1_at_0_50": 0.996503,
+      "false_positives": 4,
+      "false_negatives": 2,
+      "calibrated_log_loss": 0.002341,
+      "calibrated_ece": 0.000311
+    },
+    "final_held_out_test": {
+      "partition": "Final Held-Out Evaluation (Seed 42)",
+      "description": "Final Test Set (splits_v2/test.csv)",
+      "transactions": 10000,
+      "fraud_count": 823,
+      "fraud_rate_pct": 8.23,
+      "raw_pr_auc": 0.999868,
+      "raw_roc_auc": 0.999988,
+      "raw_log_loss": 0.003173,
+      "raw_brier_score": 0.000822,
+      "precision_at_0_50": 0.98917,
+      "recall_at_0_50": 0.998785,
+      "f1_at_0_50": 0.993954,
+      "false_positives": 9,
+      "false_negatives": 1,
+      "calibrated_log_loss": 0.002443,
+      "calibrated_ece": 0.000563
+    }
+  },
+  "final_limitations": [
+    "The dataset is synthetic behavioral data generated via the AegisFin behavioral transaction engine v2.1.0.",
+    "Cross-seed robustness and held-out test evaluation establish internal benchmark consistency, not real-world fraud performance.",
+    "The operational risk bands and thresholds were derived from the synthetic policy set and reflect statistical trade-offs rather than live banking P&L costs.",
+    "Final test performance is an evaluation of the AegisFin synthetic benchmark and engineering pipeline, not a claim of production banking performance."
+  ]
+}

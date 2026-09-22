@@ -529,10 +529,10 @@ with st.sidebar:
         st.markdown(
             """
             <div style="background:#e0f2fe; padding:12px; border-radius:10px; font-size:12px; color:#0369a1; line-height: 1.5;">
-                <strong>Active Model:</strong> XGBoost (phase2-xgb-v1)<br>
-                <strong>Calibration:</strong> Platt Scaling (phase2-platt-v1)<br>
-                <strong>Risk Policy:</strong> phase2-policy-v1<br>
-                <strong>Feature Space:</strong> 17 Ingested & Historical Features<br>
+                <strong>Active Model:</strong> XGBoost v2 (2.1.0)<br>
+                <strong>Calibration:</strong> Platt Scaling (2.1.0)<br>
+                <strong>Risk Policy:</strong> 4-Tier Policy (2.0.0)<br>
+                <strong>Feature Space:</strong> 62 Production Features<br>
                 <strong>Database:</strong> Supabase PostgreSQL
             </div>
             """,

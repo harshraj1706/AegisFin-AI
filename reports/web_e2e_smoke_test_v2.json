@@ -1,0 +1,178 @@
+{
+  "timestamp": "2026-09-21T17:09:06.801178+00:00",
+  "backend_url": "http://127.0.0.1:8000",
+  "frontend_url": "http://127.0.0.1:8501",
+  "tests": {
+    "startup": {
+      "status": "PASS",
+      "backend": {
+        "status_code": 200,
+        "latency_ms": 51.37170001398772,
+        "response": {
+          "status": "ok",
+          "model_loaded": true,
+          "fraud_model_loaded": true,
+          "model_name": "XGBoost",
+          "model_version": "credit-xgb-v1.0.0",
+          "calibration_version": "credit-calibration-v1.0.0",
+          "policy_version": "credit-risk-policy-v1.0.0",
+          "feature_count": 183,
+          "calibration_method": "sigmoid_platt_scaling",
+          "risk_policy": {
+            "LOW_MAX": 0.15,
+            "MODERATE_MAX": 0.4,
+            "ELEVATED_MAX": 0.7
+          }
+        }
+      },
+      "frontend": {
+        "status_code": 200,
+        "latency_ms": 23.77499989233911,
+        "response": {
+          "raw": "ok"
+        }
+      }
+    },
+    "backend_health": {
+      "status": "PASS",
+      "status_code": 200,
+      "latency_ms": 2.7894999366253614,
+      "data": {
+        "status": "ready",
+        "fraud_model_loaded": true,
+        "model_name": "XGBoost",
+        "model_version": "2.1.0",
+        "calibration_version": "2.1.0",
+        "policy_version": "2.0.0",
+        "feature_contract_version": "2.1.0",
+        "calibration_method": "Platt",
+        "calibrator_type": "sigmoid",
+        "expected_feature_count": 62,
+        "risk_bands": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ]
+      }
+    },
+    "web_ui_load": {
+      "status": "PASS",
+      "status_code": 200,
+      "latency_ms": 31.87389997765422,
+      "content_length": 11141
+    },
+    "auth_flow": {
+      "status": "PASS",
+      "login_status": "SUCCESS",
+      "user_email": "smoke_analyst_2026@aegisfin.ai",
+      "authenticated_check_code": 200,
+      "unauthenticated_check_code": 401
+    },
+    "prediction_flow": {
+      "status": "PASS",
+      "status_code": 200,
+      "latency_ms": 8060.251299990341,
+      "transaction_id": "SMOKE_TXN_WEB_7cb110a6",
+      "raw_fraud_probability": 0.7225527763366699,
+      "calibrated_fraud_probability": 0.35962650775239263,
+      "risk_band": "MEDIUM",
+      "recommended_action": "STEP_UP_AUTH",
+      "legacy_fraud_probability": 0.35962650775239263,
+      "legacy_fraud_band": "REVIEW",
+      "legacy_decision": "MANUAL_REVIEW",
+      "model_version": "2.1.0"
+    },
+    "risk_band_behavior": {
+      "status": "PASS",
+      "assigned_band": "MEDIUM",
+      "assigned_action": "STEP_UP_AUTH",
+      "canonical_bands": [
+        "CRITICAL",
+        "MEDIUM",
+        "LOW",
+        "HIGH"
+      ],
+      "canonical_actions": [
+        "MANUAL_REVIEW",
+        "AUTO_APPROVE",
+        "STEP_UP_AUTH",
+        "HARD_DECLINE"
+      ]
+    },
+    "history": {
+      "status": "PASS",
+      "status_code": 200,
+      "items_count": 10,
+      "test_txn_found": true
+    },
+    "high_risk_feed": {
+      "status": "PASS",
+      "status_code": 200,
+      "items_count": 1,
+      "sample": [
+        {
+          "transaction_id": "SMOKE_TXN_WEB_7cb110a6",
+          "amount": 275.5,
+          "customer_id": "CUST_SMOKE_WEB_7cb110a6",
+          "timestamp": "2026-09-21T17:09:15.486682+00:00",
+          "fraud_probability": 0.3596265,
+          "fraud_band": "REVIEW",
+          "decision": "MANUAL_REVIEW",
+          "model_version": "2.1.0",
+          "risk_band": "MEDIUM",
+          "recommended_action": "STEP_UP_AUTH"
+        }
+      ]
+    },
+    "duplicate_protection": {
+      "status": "PASS",
+      "status_code": 409,
+      "detail": "Transaction 'SMOKE_TXN_WEB_7cb110a6' has already been processed."
+    },
+    "feature_debug_view": {
+      "status": "PASS",
+      "status_code": 200,
+      "feature_count": 62,
+      "expected_feature_count": 62,
+      "feature_schema_valid": true
+    },
+    "browser_network_errors": {
+      "status": "PASS",
+      "server_errors_detected": false,
+      "recorded_codes": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ]
+    },
+    "cleanup": {
+      "status": "PASS",
+      "cleaned_records": {
+        "snapshots": 1,
+        "predictions": 1,
+        "transactions": 1,
+        "entity_states": 1
+      }
+    }
+  },
+  "summary": {
+    "overall_smoke_test": "PASS",
+    "web_application": "PASS",
+    "backend": "PASS",
+    "frontend": "PASS",
+    "auth": "PASS",
+    "prediction": "PASS",
+    "history": "PASS",
+    "high_risk_feed": "PASS",
+    "duplicate_protection": "PASS",
+    "tests_passed": 12,
+    "total_tests": 12
+  }
+}

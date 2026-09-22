@@ -277,18 +277,20 @@ def render_fraud_detection_page(api_base_url: Optional[str] = None):
         last_payload = st.session_state.get("last_fraud_payload")
 
         if last_res:
-            fraud_prob = float(last_res.get("fraud_probability", 0.0))
-            raw_prob = float(last_res.get("raw_probability", 0.0))
-            band = str(last_res.get("fraud_band", "LOW")).upper()
-            decision = str(last_res.get("decision", "ALLOW")).upper()
+            fraud_prob = float(last_res.get("calibrated_fraud_probability", last_res.get("fraud_probability", 0.0)))
+            raw_prob = float(last_res.get("raw_fraud_probability", last_res.get("raw_probability", 0.0)))
+            band = str(last_res.get("risk_band", last_res.get("fraud_band", "LOW"))).upper()
+            decision = str(last_res.get("recommended_action", last_res.get("decision", "ALLOW"))).upper()
             prob_pct = f"{fraud_prob * 100:.2f}%"
             raw_pct = f"{raw_prob * 100:.2f}%"
 
-            # Dynamic Band Badges & Color Palette
+            # Dynamic Band Badges & Color Palette (Phase 2 4-Tier Canonical + Legacy)
             badge_colors = {
                 "LOW": {"bg": "rgba(16, 185, 129, 0.12)", "text": "#059669", "border": "#10b981", "icon": "🟢"},
+                "MEDIUM": {"bg": "rgba(59, 130, 246, 0.12)", "text": "#2563eb", "border": "#3b82f6", "icon": "🔵"},
+                "HIGH": {"bg": "rgba(245, 158, 11, 0.12)", "text": "#d97706", "border": "#f59e0b", "icon": "🟡"},
+                "CRITICAL": {"bg": "rgba(239, 68, 68, 0.12)", "text": "#dc2626", "border": "#ef4444", "icon": "🔴"},
                 "REVIEW": {"bg": "rgba(245, 158, 11, 0.12)", "text": "#d97706", "border": "#f59e0b", "icon": "🟡"},
-                "HIGH": {"bg": "rgba(239, 68, 68, 0.12)", "text": "#dc2626", "border": "#ef4444", "icon": "🔴"},
             }
             colors = badge_colors.get(band, badge_colors["LOW"])
 
@@ -306,8 +308,8 @@ def render_fraud_detection_page(api_base_url: Optional[str] = None):
                 f'<div style="font-size: 26px; font-weight: 800; color: {colors["text"]}; margin-top: 2px;">{prob_pct}</div>'
                 f'<div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Platt Calibrated</div></div>'
                 f'<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;">'
-                f'<div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Decision</div>'
-                f'<div style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 4px;">{decision}</div>'
+                f'<div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Recommended Action</div>'
+                f'<div style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px;">{decision}</div>'
                 f'<div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Policy Action</div></div></div>'
                 f'<div style="display: flex; justify-content: space-between; align-items: center; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 12px;">'
                 f'<span style="color: #6b21a8; font-weight: 600;">🌳 Raw XGBoost Tree Score:</span>'
@@ -315,8 +317,9 @@ def render_fraud_detection_page(api_base_url: Optional[str] = None):
                 f'<div style="background: #f1f5f9; border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #475569; line-height: 1.6;">'
                 f'<div style="display: flex; justify-content: space-between;"><strong>Model:</strong> <span>{last_res.get("model_name")} ({last_res.get("model_version")})</span></div>'
                 f'<div style="display: flex; justify-content: space-between;"><strong>Calibration:</strong> <span>{last_res.get("calibration_version", "N/A")} ({last_res.get("calibration_method", "Platt")})</span></div>'
-                f'<div style="display: flex; justify-content: space-between;"><strong>Policy Thresholds:</strong> <span>Review ≥ 24.52% | High ≥ 35.44%</span></div>'
-                f'<div style="display: flex; justify-content: space-between;"><strong>Inference Latency:</strong> <span>⚡ {last_res.get("prediction_latency_ms", 0.0):.0f} ms</span></div></div>'
+                f'<div style="display: flex; justify-content: space-between;"><strong>Policy Thresholds:</strong> <span>Med ≥ 10% | High ≥ 40% | Crit ≥ 80%</span></div>'
+                f'<div style="display: flex; justify-content: space-between;"><strong>Features:</strong> <span>{last_res.get("feature_count", 62)} Production Features (v2.1.0)</span></div>'
+                f'<div style="display: flex; justify-content: space-between;"><strong>Inference Latency:</strong> <span>⚡ {last_res.get("prediction_latency_ms", 0.0):.1f} ms</span></div></div>'
                 f'</div>'
             )
             st.markdown(card_html, unsafe_allow_html=True)
@@ -370,6 +373,9 @@ def render_fraud_detection_page(api_base_url: Optional[str] = None):
                         "amount",
                         "customer_id",
                         "timestamp",
+                        "calibrated_fraud_probability",
+                        "risk_band",
+                        "recommended_action",
                         "fraud_probability",
                         "fraud_band",
                         "decision",
@@ -377,8 +383,16 @@ def render_fraud_detection_page(api_base_url: Optional[str] = None):
                     ]
                     available_cols = [c for c in display_cols if c in df_items.columns]
                     df_display = df_items[available_cols].copy()
-                    df_display["fraud_probability"] = df_display["fraud_probability"].apply(lambda p: f"{p*100:.2f}%")
-                    df_display["amount"] = df_display["amount"].apply(lambda a: f"${a:,.2f}")
+                    if "calibrated_fraud_probability" in df_display.columns:
+                        df_display["calibrated_fraud_probability"] = df_display["calibrated_fraud_probability"].apply(
+                            lambda p: f"{float(p)*100:.2f}%" if pd.notnull(p) else "N/A"
+                        )
+                    if "fraud_probability" in df_display.columns:
+                        df_display["fraud_probability"] = df_display["fraud_probability"].apply(
+                            lambda p: f"{float(p)*100:.2f}%" if pd.notnull(p) else "N/A"
+                        )
+                    if "amount" in df_display.columns:
+                        df_display["amount"] = df_display["amount"].apply(lambda a: f"${float(a):,.2f}")
                     st.dataframe(df_display, use_container_width=True, height=280)
                 else:
                     st.info("No transaction history records found in Supabase yet.")
@@ -398,12 +412,15 @@ def render_fraud_detection_page(api_base_url: Optional[str] = None):
                 risk_items = r_resp.json().get("items", [])
                 if risk_items:
                     for item in risk_items:
-                        b_color = "#dc2626" if item.get("fraud_band") == "HIGH" else "#d97706"
+                        r_band = item.get("risk_band") or item.get("fraud_band", "REVIEW")
+                        r_act = item.get("recommended_action") or item.get("decision", "MANUAL_REVIEW")
+                        r_prob = item.get("calibrated_fraud_probability") or item.get("fraud_probability", 0.0)
+                        b_color = "#dc2626" if r_band in ("CRITICAL", "HIGH") else "#d97706"
                         st.markdown(
                             f"""
                             <div style="border-left: 4px solid {b_color}; background: #fff5f5; padding: 10px 14px; border-radius: 0 8px 8px 0; margin-bottom: 8px;">
                                 <strong>⚠️ Alert:</strong> Transaction <code>{item.get('transaction_id')}</code> | Customer: <code>{item.get('customer_id')}</code> | Amount: <strong>${item.get('amount', 0):,.2f}</strong><br>
-                                <span style="font-size:12px; color:#4b5563;">Fraud Probability: <strong>{item.get('fraud_probability', 0)*100:.2f}%</strong> | Risk Band: <strong>{item.get('fraud_band')}</strong> | Decision: <strong>{item.get('decision')}</strong></span>
+                                <span style="font-size:12px; color:#4b5563;">Calibrated Prob: <strong>{float(r_prob)*100:.2f}%</strong> | Risk Band: <strong>{r_band}</strong> | Action: <strong>{r_act}</strong></span>
                             </div>
                             """,
                             unsafe_allow_html=True,

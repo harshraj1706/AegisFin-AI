@@ -178,19 +178,29 @@ class FraudPredictionResponse(BaseModel):
     """
     Phase 2 Fraud Prediction Response.
     Returns calibrated fraud probability, policy band, operational decision, and model metadata.
+    Supports both Phase 2 canonical fields and legacy compatibility fields.
     """
 
     model_config = ConfigDict(populate_by_name=True)
 
     transaction_id: str = Field(..., description="Unique transaction identifier")
-    fraud_probability: float = Field(..., ge=0.0, le=1.0, description="Calibrated fraud probability")
-    fraud_band: Literal["LOW", "REVIEW", "HIGH"] = Field(..., description="Policy risk band")
-    decision: Literal["ALLOW", "MANUAL_REVIEW", "BLOCK"] = Field(..., description="Operational policy decision")
+    fraud_probability: float = Field(..., ge=0.0, le=1.0, description="Calibrated fraud probability (legacy alias)")
+    fraud_band: Literal["LOW", "REVIEW", "HIGH"] = Field(..., description="Legacy projected risk band")
+    decision: Literal["ALLOW", "MANUAL_REVIEW", "BLOCK"] = Field(..., description="Legacy projected policy decision")
     model_name: str = Field(..., description="Model family (XGBoost)")
     model_version: str = Field(..., description="Trained model version")
     calibration_version: str = Field(..., description="Calibration version")
     policy_version: str = Field(..., description="Risk policy version")
     prediction_latency_ms: float = Field(..., description="Inference latency in milliseconds")
+
+    # Canonical Phase 2 Fields (Source of Truth)
+    raw_fraud_probability: Optional[float] = Field(None, ge=0.0, le=1.0, description="Canonical raw uncalibrated fraud probability")
+    calibrated_fraud_probability: Optional[float] = Field(None, ge=0.0, le=1.0, description="Canonical calibrated fraud probability")
+    risk_band: Optional[Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]] = Field(None, description="Canonical 4-tier Phase 2 risk band")
+    recommended_action: Optional[Literal["AUTO_APPROVE", "STEP_UP_AUTH", "MANUAL_REVIEW", "HARD_DECLINE"]] = Field(None, description="Canonical Phase 2 operational action")
+    feature_contract_version: Optional[str] = Field("2.1.0", description="Phase 2 feature contract version")
+    calibrator_type: Optional[str] = Field("sigmoid", description="Calibrator type")
+    scored_at: Optional[str] = Field(None, description="ISO-8601 UTC timestamp of scoring event")
 
     # Optional technical / audit fields
     raw_probability: Optional[float] = Field(None, description="Uncalibrated raw model probability")

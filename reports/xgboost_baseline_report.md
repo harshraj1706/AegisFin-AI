@@ -1,0 +1,120 @@
+# AegisFin-AI Phase 2 — XGBoost Baseline Model Report
+
+**Date:** 2026-09-21 03:59:56 UTC  
+**Model Name:** `aegisfin_xgboost_baseline`  
+**Model Type:** `xgboost.XGBClassifier`  
+**Status:** Baseline Training & Evaluation Complete (Uncalibrated)
+
+---
+
+## 1. Executive Summary & Core Results
+
+The first production-compatible baseline fraud detection model for AegisFin Phase 2 was successfully trained using the frozen 62 production features.
+
+Training was performed strictly on chronological training data (`train.csv`), and evaluated on the chronological validation split (`validation.csv`). Calibration, policy, and final test splits were **not used** and remain 100% untouched.
+
+| Metric | Baseline Value | Interpretation |
+|---|---|---|
+| **PR-AUC (Primary Metric)** | **1.0000** | Area under Precision-Recall curve on chronological validation |
+| **ROC-AUC** | **1.0000** | Discriminative ranking capability |
+| **Log Loss** | **0.0001** | Cross-entropy loss (uncalibrated probabilities) |
+| **Brier Score** | **0.0000** | Mean squared probability error |
+| **Precision @ 0.50** | **1.0000** | Diagnostic precision at default 0.50 cut-off |
+| **Recall @ 0.50** | **1.0000** | Diagnostic recall at default 0.50 cut-off |
+| **F1 Score @ 0.50** | **1.0000** | Diagnostic harmonic mean at default 0.50 cut-off |
+
+> [!IMPORTANT]
+> **Threshold Notice:** The 0.50 threshold is purely diagnostic. Operational threshold optimization and risk bands will be established in subsequent Policy steps.
+
+---
+
+## 2. Dataset & Split Specifications
+
+| Dataset Split | Rows | Fraud Count | Legit Count | Fraud Rate | Role |
+|---|---|---|---|---|---|
+| **TRAIN** | 60,000 | 4,415 | 55,585 | 7.36% | Model parameter fitting |
+| **VALIDATION** | 10,000 | 1,065 | 8,935 | 10.65% | Baseline performance evaluation |
+| **CALIBRATION** | 10,000 | 1,084 | 8,916 | 10.84% | **Untouched** (Reserved for Platt/Isotonic) |
+| **POLICY** | 10,000 | 1,059 | 8,941 | 10.59% | **Untouched** (Reserved for Threshold/Rules) |
+| **FINAL TEST** | 10,000 | 877 | 9,123 | 8.77% | **Untouched** (Reserved for final benchmark) |
+
+### Class Imbalance Handling
+Class imbalance was addressed using `scale_pos_weight`, calculated strictly from the **training partition only**:
+$$\text{scale\_pos\_weight} = \frac{\text{Legitimate}_{\text{train}}}{\text{Fraud}_{\text{train}}} = \frac{55585}{4415} = 12.590034$$
+
+---
+
+## 3. Model Hyperparameters & Configuration
+
+```json
+{
+  "random_state": 42,
+  "n_estimators": 500,
+  "learning_rate": 0.05,
+  "max_depth": 6,
+  "subsample": 0.8,
+  "colsample_bytree": 0.8,
+  "objective": "binary:logistic",
+  "eval_metric": "aucpr",
+  "scale_pos_weight": 12.590033975084937,
+  "tree_method": "hist",
+  "n_jobs": -1
+}
+```
+
+- **Feature Count:** Exactly 62 production features (from `VALID_FEATURE_NAMES`).
+- **Feature Ordering:** Exactly preserved as defined in `app/production_feature_definitions.py`.
+- **Identifiers Excluded:** `transaction_id` excluded from feature matrix.
+- **Scenario Metadata:** Zero synthetic scenario columns used.
+
+---
+
+## 4. Confusion Matrix (Diagnostic Threshold = 0.50)
+
+| | Predicted Legit (0) | Predicted Fraud (1) | Total Actual |
+|---|---|---|---|
+| **Actual Legit (0)** | 8,935 (TN) | 0 (FP) | 8,935 |
+| **Actual Fraud (1)** | 0 (FN) | 1,065 (TP) | 1,065 |
+| **Total Predicted** | 8,935 | 1,065 | 10,000 |
+
+---
+
+## 5. Top 15 Feature Importances (Gain)
+
+| Rank | Feature Name | Importance (Gain) |
+|---|---|---|
+| 1 | `device_tx_count_1h` | 0.407471 |
+| 2 | `ip_tx_count_1h` | 0.403424 |
+| 3 | `card_ip_seen_before` | 0.059705 |
+| 4 | `amount` | 0.027940 |
+| 5 | `merchant_tx_count_1h` | 0.026830 |
+| 6 | `customer_ip_seen_before` | 0.021693 |
+| 7 | `amount_log` | 0.009836 |
+| 8 | `customer_device_seen_before` | 0.007552 |
+| 9 | `device_tx_count_24h` | 0.005502 |
+| 10 | `device_unique_customers_24h` | 0.003457 |
+| 11 | `customer_amount_ratio` | 0.002744 |
+| 12 | `amount_cents` | 0.001931 |
+| 13 | `device_unique_cards_24h` | 0.001910 |
+| 14 | `product_code_freq` | 0.001721 |
+| 15 | `customer_tx_count_1h` | 0.001656 |
+
+*Note: All 62 production features are retained in the model. No features were dropped based on importance.*
+
+---
+
+## 6. Output Artifacts
+
+- **Model Pickle:** `models/aegisfin_xgboost_baseline.pkl`
+- **Model Metadata JSON:** `models/aegisfin_xgboost_baseline_metadata.json`
+- **Report JSON:** `reports/xgboost_baseline_report.json`
+- **Report Markdown:** `reports/xgboost_baseline_report.md`
+
+---
+
+## 7. Governance & Anti-Leakage Verifications
+
+1. **Zero Pre-Processing Leakage:** No SMOTE, undersampling, oversampling, scaling, or feature selection applied.
+2. **Strict Chronological Sequence:** Model fit strictly on `train.csv` (ended `2026-01-28 11:02:38 UTC`), evaluated on `validation.csv` (started `2026-01-28 11:03:14 UTC`).
+3. **Partition Isolation:** Calibration, Policy, and Final Test datasets were never loaded or inspected during this step.
+4. **Schema Parity:** Model inputs strictly conform to the 62 features generated by the live production feature engine.

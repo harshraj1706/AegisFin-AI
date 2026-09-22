@@ -86,3 +86,25 @@ if not FRAUD_TRAINING_METADATA_PATH.exists():
             FRAUD_TRAINING_METADATA_PATH = candidate
             break
 
+# Frozen AegisFin Phase 2 Production 62-Feature Pipeline Paths
+FRAUD_MODEL_V2_PATH: Path = Path(
+    os.getenv(
+        "FRAUD_MODEL_V2_PATH",
+        BASE_DIR / "models" / "aegisfin_xgboost_baseline_v2.pkl",
+    )
+)
+
+FRAUD_CALIBRATOR_V2_PATH: Path = Path(
+    os.getenv(
+        "FRAUD_CALIBRATOR_V2_PATH",
+        BASE_DIR / "models" / "aegisfin_probability_calibrator_v2.pkl",
+    )
+)
+
+FRAUD_POLICY_V2_PATH: Path = Path(
+    os.getenv(
+        "FRAUD_POLICY_V2_PATH",
+        BASE_DIR / "configs" / "fraud_risk_policy_v2.json",
+    )
+)
+

@@ -1,0 +1,255 @@
+{
+  "model_name": "aegisfin_xgboost_baseline_v2",
+  "model_type": "xgboost.XGBClassifier",
+  "dataset_version": "2.1.0",
+  "created_at_utc": "2026-09-21T04:30:06.761947+00:00",
+  "training_data": {
+    "path": "D:\\AegisFin-AI_main_folder\\AegisFin-AI-Phase1-Rich-Integration-Updated\\AegisFin-AI-Phase1-Rich-Integration\\data\\behavioral\\splits_v2\\train.csv",
+    "rows": 60000,
+    "fraud_count": 4577,
+    "legitimate_count": 55423,
+    "fraud_rate_pct": 7.6283,
+    "scale_pos_weight": 12.109023377758357
+  },
+  "validation_data": {
+    "path": "D:\\AegisFin-AI_main_folder\\AegisFin-AI-Phase1-Rich-Integration-Updated\\AegisFin-AI-Phase1-Rich-Integration\\data\\behavioral\\splits_v2\\validation.csv",
+    "rows": 10000,
+    "fraud_count": 1005,
+    "legitimate_count": 8995,
+    "fraud_rate_pct": 10.05
+  },
+  "feature_count": 62,
+  "feature_names": [
+    "amount",
+    "product_code_freq",
+    "card_network_freq",
+    "card_type_freq",
+    "email_domain_freq",
+    "missing_fields_count",
+    "hour",
+    "weekday_index",
+    "is_weekend",
+    "is_night",
+    "day_of_year",
+    "time_since_midnight_sec",
+    "amount_log",
+    "amount_cents",
+    "is_round_amount",
+    "is_zero_cents",
+    "customer_tx_count_5m",
+    "customer_tx_count_1h",
+    "customer_tx_count_24h",
+    "customer_amount_mean",
+    "customer_amount_std",
+    "customer_amount_zscore",
+    "customer_amount_ratio",
+    "customer_is_new",
+    "customer_unique_merchants_24h",
+    "customer_unique_devices_24h",
+    "card_tx_count_5m",
+    "card_tx_count_1h",
+    "card_tx_count_24h",
+    "card_amount_mean",
+    "card_amount_std",
+    "card_amount_ratio",
+    "card_is_new",
+    "device_tx_count_5m",
+    "device_tx_count_1h",
+    "device_tx_count_24h",
+    "device_unique_customers_24h",
+    "device_unique_cards_24h",
+    "device_is_new",
+    "merchant_tx_count_1h",
+    "merchant_tx_count_24h",
+    "merchant_amount_mean",
+    "merchant_amount_std",
+    "customer_merchant_tx_count",
+    "customer_merchant_is_new",
+    "ip_tx_count_5m",
+    "ip_tx_count_1h",
+    "ip_tx_count_24h",
+    "ip_unique_customers_24h",
+    "ip_unique_cards_24h",
+    "ip_unique_devices_24h",
+    "ip_is_new",
+    "customer_device_seen_before",
+    "customer_card_seen_before",
+    "customer_merchant_seen_before",
+    "customer_ip_seen_before",
+    "card_device_seen_before",
+    "card_ip_seen_before",
+    "rapid_transaction_flag",
+    "transactions_last_15m",
+    "amount_sum_last_1h",
+    "amount_sum_last_24h"
+  ],
+  "model_params": {
+    "random_state": 42,
+    "n_estimators": 500,
+    "learning_rate": 0.05,
+    "max_depth": 6,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "objective": "binary:logistic",
+    "eval_metric": "aucpr",
+    "scale_pos_weight": 12.109023377758357,
+    "tree_method": "hist",
+    "n_jobs": -1
+  },
+  "training_duration_seconds": 2.55,
+  "validation_metrics": {
+    "pr_auc": 0.9992205199841334,
+    "roc_auc": 0.9999236723552886,
+    "log_loss": 0.005001054611057043,
+    "brier_score": 0.0010239575058221817,
+    "precision_at_0_50": 0.9891625615763546,
+    "recall_at_0_50": 0.9990049751243781,
+    "f1_at_0_50": 0.994059405940594
+  },
+  "diagnostic_confusion_matrix_at_0_50": {
+    "true_positive": 1004,
+    "false_positive": 11,
+    "true_negative": 8984,
+    "false_negative": 1
+  },
+  "top_15_features": [
+    {
+      "rank": 1,
+      "feature_name": "device_tx_count_1h",
+      "importance": 0.31468701362609863
+    },
+    {
+      "rank": 2,
+      "feature_name": "ip_tx_count_1h",
+      "importance": 0.16088099777698517
+    },
+    {
+      "rank": 3,
+      "feature_name": "card_device_seen_before",
+      "importance": 0.11828300356864929
+    },
+    {
+      "rank": 4,
+      "feature_name": "customer_device_seen_before",
+      "importance": 0.09355899691581726
+    },
+    {
+      "rank": 5,
+      "feature_name": "merchant_tx_count_1h",
+      "importance": 0.05765200033783913
+    },
+    {
+      "rank": 6,
+      "feature_name": "ip_is_new",
+      "importance": 0.03627699986100197
+    },
+    {
+      "rank": 7,
+      "feature_name": "product_code_freq",
+      "importance": 0.030949000269174576
+    },
+    {
+      "rank": 8,
+      "feature_name": "card_ip_seen_before",
+      "importance": 0.028488999232649803
+    },
+    {
+      "rank": 9,
+      "feature_name": "customer_ip_seen_before",
+      "importance": 0.015604999847710133
+    },
+    {
+      "rank": 10,
+      "feature_name": "card_is_new",
+      "importance": 0.013650000095367432
+    },
+    {
+      "rank": 11,
+      "feature_name": "amount_sum_last_1h",
+      "importance": 0.013163000345230103
+    },
+    {
+      "rank": 12,
+      "feature_name": "customer_is_new",
+      "importance": 0.011958999559283257
+    },
+    {
+      "rank": 13,
+      "feature_name": "customer_tx_count_5m",
+      "importance": 0.009127999655902386
+    },
+    {
+      "rank": 14,
+      "feature_name": "ip_unique_customers_24h",
+      "importance": 0.008558999747037888
+    },
+    {
+      "rank": 15,
+      "feature_name": "customer_tx_count_1h",
+      "importance": 0.008123000152409077
+    }
+  ],
+  "v1_vs_v2_comparison": {
+    "train_fraud_rate": {
+      "v1": "7.3583%",
+      "v2": "7.6283%"
+    },
+    "val_fraud_rate": {
+      "v1": "10.6500%",
+      "v2": "10.0500%"
+    },
+    "scale_pos_weight": {
+      "v1": 12.590034,
+      "v2": 12.109023
+    },
+    "pr_auc": {
+      "v1": 1.0,
+      "v2": 0.9992
+    },
+    "roc_auc": {
+      "v1": 1.0,
+      "v2": 0.9999
+    },
+    "log_loss": {
+      "v1": 5.1e-05,
+      "v2": 0.005001
+    },
+    "brier_score": {
+      "v1": 2e-06,
+      "v2": 0.001024
+    },
+    "precision_at_0_50": {
+      "v1": 1.0,
+      "v2": 0.9892
+    },
+    "recall_at_0_50": {
+      "v1": 1.0,
+      "v2": 0.999
+    },
+    "f1_at_0_50": {
+      "v1": 1.0,
+      "v2": 0.9941
+    },
+    "true_positive": {
+      "v1": 1065,
+      "v2": 1004
+    },
+    "false_positive": {
+      "v1": 0,
+      "v2": 11
+    },
+    "true_negative": {
+      "v1": 8935,
+      "v2": 8984
+    },
+    "false_negative": {
+      "v1": 0,
+      "v2": 1
+    }
+  },
+  "untouched_splits": [
+    "calibration.csv",
+    "policy.csv",
+    "test.csv"
+  ]
+}

@@ -105,12 +105,18 @@ def test_valid_authenticated_prediction(auth_headers, cleanup_transactions):
     assert data["transaction_id"] == txn_id
     assert 0.0 <= data["fraud_probability"] <= 1.0
     assert data["fraud_band"] in {"LOW", "REVIEW", "HIGH"}
-    assert data["decision"] in {"ALLOW", "MANUAL_REVIEW", "BLOCK"}
     assert data["model_name"] == "XGBoost"
-    assert data["model_version"] == "phase2-xgb-v1"
-    assert data["calibration_version"] == "phase2-platt-v1"
-    assert data["policy_version"] == "phase2-policy-v1"
+    assert data["model_version"] == "2.1.0"
+    assert data["calibration_version"] == "2.1.0"
+    assert data["policy_version"] == "2.0.0"
+    assert data["feature_contract_version"] == "2.1.0"
     assert data["prediction_latency_ms"] > 0.0
+
+    # Canonical Phase 2 fields
+    assert "raw_fraud_probability" in data
+    assert "calibrated_fraud_probability" in data
+    assert data["risk_band"] in {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
+    assert data["recommended_action"] in {"AUTO_APPROVE", "STEP_UP_AUTH", "MANUAL_REVIEW", "HARD_DECLINE"}
 
     # Ensure SUPABASE_SECRET_KEY is never leaked
     assert SUPABASE_SECRET_KEY not in str(data)
@@ -294,9 +300,10 @@ def test_anti_leakage_current_transaction_excluded(auth_headers, cleanup_transac
     # Test debug endpoint to confirm how feature engine evaluates brand new customer
     feat_res = client.post("/api/v1/fraud/features/test", json=payload)
     assert feat_res.status_code == 200
-    sample_feat = feat_res.json()["sample_features"]
-    assert sample_feat["uid_is_new"] == 1.0
-    assert sample_feat["uid_past_count"] == 0.0
+    features = feat_res.json()["features"]
+    assert features["customer_is_new"] == 1.0
+    assert features["customer_tx_count_5m"] == 0.0
+    assert features["customer_tx_count_24h"] == 0.0
 
 
 # -----------------------------------------------------------------------------
