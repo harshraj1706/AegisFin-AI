@@ -1,0 +1,387 @@
+{
+  "calibrator_name": "aegisfin_probability_calibrator_v2",
+  "selected_method": "sigmoid",
+  "selection_rationale": "Platt scaling (sigmoid) reduces Log Loss by 21.8% (0.002070 -> 0.001619) and Brier Score by 22.2% (0.000437 -> 0.000340) while guaranteeing strict parametric monotonicity, continuous differentiable gradients, and zero step-function probability plateaus for downstream policy threshold tuning.",
+  "base_model_path": "D:\\AegisFin-AI_main_folder\\AegisFin-AI-Phase1-Rich-Integration-Updated\\AegisFin-AI-Phase1-Rich-Integration\\models\\aegisfin_xgboost_baseline_v2.pkl",
+  "calibration_dataset": {
+    "path": "D:\\AegisFin-AI_main_folder\\AegisFin-AI-Phase1-Rich-Integration-Updated\\AegisFin-AI-Phase1-Rich-Integration\\data\\behavioral\\splits_v2\\calibration.csv",
+    "total_rows": 10000,
+    "fraud_count": 976,
+    "legitimate_count": 9024,
+    "fraud_rate_pct": 9.76
+  },
+  "created_at_utc": "2026-09-21T05:40:46.589487+00:00",
+  "feature_count": 62,
+  "feature_names": [
+    "amount",
+    "product_code_freq",
+    "card_network_freq",
+    "card_type_freq",
+    "email_domain_freq",
+    "missing_fields_count",
+    "hour",
+    "weekday_index",
+    "is_weekend",
+    "is_night",
+    "day_of_year",
+    "time_since_midnight_sec",
+    "amount_log",
+    "amount_cents",
+    "is_round_amount",
+    "is_zero_cents",
+    "customer_tx_count_5m",
+    "customer_tx_count_1h",
+    "customer_tx_count_24h",
+    "customer_amount_mean",
+    "customer_amount_std",
+    "customer_amount_zscore",
+    "customer_amount_ratio",
+    "customer_is_new",
+    "customer_unique_merchants_24h",
+    "customer_unique_devices_24h",
+    "card_tx_count_5m",
+    "card_tx_count_1h",
+    "card_tx_count_24h",
+    "card_amount_mean",
+    "card_amount_std",
+    "card_amount_ratio",
+    "card_is_new",
+    "device_tx_count_5m",
+    "device_tx_count_1h",
+    "device_tx_count_24h",
+    "device_unique_customers_24h",
+    "device_unique_cards_24h",
+    "device_is_new",
+    "merchant_tx_count_1h",
+    "merchant_tx_count_24h",
+    "merchant_amount_mean",
+    "merchant_amount_std",
+    "customer_merchant_tx_count",
+    "customer_merchant_is_new",
+    "ip_tx_count_5m",
+    "ip_tx_count_1h",
+    "ip_tx_count_24h",
+    "ip_unique_customers_24h",
+    "ip_unique_cards_24h",
+    "ip_unique_devices_24h",
+    "ip_is_new",
+    "customer_device_seen_before",
+    "customer_card_seen_before",
+    "customer_merchant_seen_before",
+    "customer_ip_seen_before",
+    "card_device_seen_before",
+    "card_ip_seen_before",
+    "rapid_transaction_flag",
+    "transactions_last_15m",
+    "amount_sum_last_1h",
+    "amount_sum_last_24h"
+  ],
+  "pre_calibration_metrics": {
+    "log_loss": 0.0020700772292912006,
+    "brier_score": 0.00043740711407735944,
+    "ece": 0.000591,
+    "mce": 0.700177,
+    "pr_auc": 0.9998255847434689,
+    "roc_auc": 0.9999822876700383
+  },
+  "sigmoid_metrics": {
+    "log_loss": 0.0016185696003958583,
+    "brier_score": 0.00033975805854424834,
+    "ece": 0.000283,
+    "mce": 0.616561,
+    "pr_auc": 0.9998255847434689,
+    "roc_auc": 0.9999822876700384,
+    "slope": 1.060451865196228,
+    "intercept": -1.5920073986053467
+  },
+  "isotonic_metrics": {
+    "log_loss": 0.001234340714290738,
+    "brier_score": 0.00029327021911740303,
+    "ece": 0.0,
+    "mce": 0.0,
+    "pr_auc": 0.9998583589301362,
+    "roc_auc": 0.9999906329024242
+  },
+  "reliability_bins": {
+    "raw": [
+      {
+        "bin_range": "0.0-0.1",
+        "count": 9014,
+        "fraud_count": 0,
+        "legitimate_count": 9014,
+        "mean_predicted_prob": 0.000161,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.000161
+      },
+      {
+        "bin_range": "0.1-0.2",
+        "count": 1,
+        "fraud_count": 0,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.11437,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.11437
+      },
+      {
+        "bin_range": "0.2-0.3",
+        "count": 2,
+        "fraud_count": 0,
+        "legitimate_count": 2,
+        "mean_predicted_prob": 0.261149,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.261149
+      },
+      {
+        "bin_range": "0.3-0.4",
+        "count": 1,
+        "fraud_count": 0,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.34012,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.34012
+      },
+      {
+        "bin_range": "0.4-0.5",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.5-0.6",
+        "count": 1,
+        "fraud_count": 0,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.559133,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.559133
+      },
+      {
+        "bin_range": "0.6-0.7",
+        "count": 2,
+        "fraud_count": 1,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.638116,
+        "observed_fraud_rate": 0.5,
+        "calibration_gap": 0.138116
+      },
+      {
+        "bin_range": "0.7-0.8",
+        "count": 1,
+        "fraud_count": 0,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.700177,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.700177
+      },
+      {
+        "bin_range": "0.8-0.9",
+        "count": 2,
+        "fraud_count": 1,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.871045,
+        "observed_fraud_rate": 0.5,
+        "calibration_gap": 0.371045
+      },
+      {
+        "bin_range": "0.9-1.0",
+        "count": 976,
+        "fraud_count": 974,
+        "legitimate_count": 2,
+        "mean_predicted_prob": 0.99919,
+        "observed_fraud_rate": 0.997951,
+        "calibration_gap": 0.001239
+      }
+    ],
+    "sigmoid": [
+      {
+        "bin_range": "0.0-0.1",
+        "count": 9018,
+        "fraud_count": 0,
+        "legitimate_count": 9018,
+        "mean_predicted_prob": 5.2e-05,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 5.2e-05
+      },
+      {
+        "bin_range": "0.1-0.2",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.2-0.3",
+        "count": 3,
+        "fraud_count": 1,
+        "legitimate_count": 2,
+        "mean_predicted_prob": 0.250422,
+        "observed_fraud_rate": 0.333333,
+        "calibration_gap": 0.082911
+      },
+      {
+        "bin_range": "0.3-0.4",
+        "count": 1,
+        "fraud_count": 0,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.333456,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.333456
+      },
+      {
+        "bin_range": "0.4-0.5",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.5-0.6",
+        "count": 1,
+        "fraud_count": 1,
+        "legitimate_count": 0,
+        "mean_predicted_prob": 0.597146,
+        "observed_fraud_rate": 1.0,
+        "calibration_gap": 0.402854
+      },
+      {
+        "bin_range": "0.6-0.7",
+        "count": 1,
+        "fraud_count": 0,
+        "legitimate_count": 1,
+        "mean_predicted_prob": 0.616561,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.616561
+      },
+      {
+        "bin_range": "0.7-0.8",
+        "count": 2,
+        "fraud_count": 2,
+        "legitimate_count": 0,
+        "mean_predicted_prob": 0.776552,
+        "observed_fraud_rate": 1.0,
+        "calibration_gap": 0.223448
+      },
+      {
+        "bin_range": "0.8-0.9",
+        "count": 1,
+        "fraud_count": 1,
+        "legitimate_count": 0,
+        "mean_predicted_prob": 0.812711,
+        "observed_fraud_rate": 1.0,
+        "calibration_gap": 0.187289
+      },
+      {
+        "bin_range": "0.9-1.0",
+        "count": 973,
+        "fraud_count": 971,
+        "legitimate_count": 2,
+        "mean_predicted_prob": 0.997819,
+        "observed_fraud_rate": 0.997945,
+        "calibration_gap": 0.000125
+      }
+    ],
+    "isotonic": [
+      {
+        "bin_range": "0.0-0.1",
+        "count": 9020,
+        "fraud_count": 0,
+        "legitimate_count": 9020,
+        "mean_predicted_prob": 0.0,
+        "observed_fraud_rate": 0.0,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.1-0.2",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.2-0.3",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.3-0.4",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.4-0.5",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.5-0.6",
+        "count": 4,
+        "fraud_count": 2,
+        "legitimate_count": 2,
+        "mean_predicted_prob": 0.5,
+        "observed_fraud_rate": 0.5,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.6-0.7",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.7-0.8",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.8-0.9",
+        "count": 0,
+        "fraud_count": 0,
+        "legitimate_count": 0,
+        "mean_predicted_prob": null,
+        "observed_fraud_rate": null,
+        "calibration_gap": 0.0
+      },
+      {
+        "bin_range": "0.9-1.0",
+        "count": 976,
+        "fraud_count": 974,
+        "legitimate_count": 2,
+        "mean_predicted_prob": 0.997951,
+        "observed_fraud_rate": 0.997951,
+        "calibration_gap": 0.0
+      }
+    ]
+  },
+  "untouched_splits": [
+    "policy.csv",
+    "test.csv"
+  ]
+}

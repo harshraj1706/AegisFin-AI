@@ -460,3 +460,110 @@ def update_entity_state(transaction: Dict[str, Any]) -> Dict[str, Any]:
             updated_count += 1
 
     return {"status": "success", "entities_updated": updated_count}
+
+
+def fetch_historical_transactions(
+    current_transaction: Dict[str, Any],
+    client: Optional[Any] = None,
+    limit: int = 500,
+) -> List[Dict[str, Any]]:
+    """
+    Retrieves historical transactions strictly prior to the current transaction timestamp
+    from Supabase public.fraud_transactions for Phase 2 62-feature production calculation.
+
+    Anti-Leakage Invariant:
+    Enforces transaction_timestamp < current_transaction_timestamp at the database level.
+    Never returns the current transaction or future/concurrent events.
+
+    Returns an empty list [] on zero prior history (cold start) or on database lookup failure.
+    """
+    curr_ts = parse_timestamp(current_transaction.get("transaction_timestamp"))
+    curr_ts_iso = curr_ts.isoformat()
+
+    cust_id = str(current_transaction.get("customer_id") or "").strip()
+    card_id = str(current_transaction.get("card_id") or current_transaction.get("card1") or "").strip()
+    device_id = current_transaction.get("device_id")
+    device_str = str(device_id).strip() if device_id is not None and str(device_id).strip() else None
+    ip_addr = current_transaction.get("ip_address")
+    ip_str = str(ip_addr).strip() if ip_addr is not None and str(ip_addr).strip() else None
+
+    # If no identifiers provided, no entity history to look up
+    if not cust_id and not card_id and not device_str and not ip_str:
+        return []
+
+    admin = client or get_supabase_admin_client()
+    merged_history: Dict[str, Dict[str, Any]] = {}
+
+    try:
+        # 1. Query by customer_id
+        if cust_id:
+            res_cust = (
+                admin.table("fraud_transactions")
+                .select("*")
+                .eq("customer_id", cust_id)
+                .lt("transaction_timestamp", curr_ts_iso)
+                .order("transaction_timestamp", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            for row in (res_cust.data or []):
+                tid = row.get("transaction_id")
+                if tid:
+                    merged_history[tid] = row
+
+        # 2. Query by card_id
+        if card_id:
+            res_card = (
+                admin.table("fraud_transactions")
+                .select("*")
+                .eq("card_id", card_id)
+                .lt("transaction_timestamp", curr_ts_iso)
+                .order("transaction_timestamp", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            for row in (res_card.data or []):
+                tid = row.get("transaction_id")
+                if tid and tid not in merged_history:
+                    merged_history[tid] = row
+
+        # 3. Query by device_id
+        if device_str:
+            res_dev = (
+                admin.table("fraud_transactions")
+                .select("*")
+                .eq("device_id", device_str)
+                .lt("transaction_timestamp", curr_ts_iso)
+                .order("transaction_timestamp", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            for row in (res_dev.data or []):
+                tid = row.get("transaction_id")
+                if tid and tid not in merged_history:
+                    merged_history[tid] = row
+
+        # 4. Query by ip_address
+        if ip_str:
+            res_ip = (
+                admin.table("fraud_transactions")
+                .select("*")
+                .eq("ip_address", ip_str)
+                .lt("transaction_timestamp", curr_ts_iso)
+                .order("transaction_timestamp", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            for row in (res_ip.data or []):
+                tid = row.get("transaction_id")
+                if tid and tid not in merged_history:
+                    merged_history[tid] = row
+
+    except Exception as exc:
+        logger.warning(f"fetch_historical_transactions encountered error: {exc}")
+        return []
+
+    # Sort chronological ascending
+    results = list(merged_history.values())
+    results.sort(key=lambda x: str(x.get("transaction_timestamp") or ""))
+    return results

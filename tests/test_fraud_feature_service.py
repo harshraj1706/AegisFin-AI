@@ -330,11 +330,11 @@ def test_debug_endpoint_fraud_features_test():
     assert response.status_code == 200
     data = response.json()
 
-    assert data["feature_count"] == 459
-    assert data["expected_feature_count"] == 459
+    assert data["feature_count"] == 62
+    assert data["expected_feature_count"] == 62
     assert data["feature_schema_valid"] is True
     assert "sample_features" in data
-    assert data["sample_features"]["TransactionAmt"] == 750.50
+    assert data["sample_features"]["amount"] == 750.50
     assert data["sample_features"]["is_weekend"] == 1.0  # 2026-09-20 is Sunday
     assert data["sample_features"]["hour"] == 12.0
 

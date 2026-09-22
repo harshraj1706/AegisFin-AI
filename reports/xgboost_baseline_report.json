@@ -1,0 +1,196 @@
+{
+  "model_name": "aegisfin_xgboost_baseline",
+  "model_type": "xgboost.XGBClassifier",
+  "created_at_utc": "2026-09-21T03:59:56.534643+00:00",
+  "training_data": {
+    "path": "D:\\AegisFin-AI_main_folder\\AegisFin-AI-Phase1-Rich-Integration-Updated\\AegisFin-AI-Phase1-Rich-Integration\\data\\behavioral\\splits\\train.csv",
+    "rows": 60000,
+    "fraud_count": 4415,
+    "legitimate_count": 55585,
+    "fraud_rate_pct": 7.3583,
+    "scale_pos_weight": 12.590033975084937
+  },
+  "validation_data": {
+    "path": "D:\\AegisFin-AI_main_folder\\AegisFin-AI-Phase1-Rich-Integration-Updated\\AegisFin-AI-Phase1-Rich-Integration\\data\\behavioral\\splits\\validation.csv",
+    "rows": 10000,
+    "fraud_count": 1065,
+    "legitimate_count": 8935,
+    "fraud_rate_pct": 10.65
+  },
+  "feature_count": 62,
+  "feature_names": [
+    "amount",
+    "product_code_freq",
+    "card_network_freq",
+    "card_type_freq",
+    "email_domain_freq",
+    "missing_fields_count",
+    "hour",
+    "weekday_index",
+    "is_weekend",
+    "is_night",
+    "day_of_year",
+    "time_since_midnight_sec",
+    "amount_log",
+    "amount_cents",
+    "is_round_amount",
+    "is_zero_cents",
+    "customer_tx_count_5m",
+    "customer_tx_count_1h",
+    "customer_tx_count_24h",
+    "customer_amount_mean",
+    "customer_amount_std",
+    "customer_amount_zscore",
+    "customer_amount_ratio",
+    "customer_is_new",
+    "customer_unique_merchants_24h",
+    "customer_unique_devices_24h",
+    "card_tx_count_5m",
+    "card_tx_count_1h",
+    "card_tx_count_24h",
+    "card_amount_mean",
+    "card_amount_std",
+    "card_amount_ratio",
+    "card_is_new",
+    "device_tx_count_5m",
+    "device_tx_count_1h",
+    "device_tx_count_24h",
+    "device_unique_customers_24h",
+    "device_unique_cards_24h",
+    "device_is_new",
+    "merchant_tx_count_1h",
+    "merchant_tx_count_24h",
+    "merchant_amount_mean",
+    "merchant_amount_std",
+    "customer_merchant_tx_count",
+    "customer_merchant_is_new",
+    "ip_tx_count_5m",
+    "ip_tx_count_1h",
+    "ip_tx_count_24h",
+    "ip_unique_customers_24h",
+    "ip_unique_cards_24h",
+    "ip_unique_devices_24h",
+    "ip_is_new",
+    "customer_device_seen_before",
+    "customer_card_seen_before",
+    "customer_merchant_seen_before",
+    "customer_ip_seen_before",
+    "card_device_seen_before",
+    "card_ip_seen_before",
+    "rapid_transaction_flag",
+    "transactions_last_15m",
+    "amount_sum_last_1h",
+    "amount_sum_last_24h"
+  ],
+  "model_params": {
+    "random_state": 42,
+    "n_estimators": 500,
+    "learning_rate": 0.05,
+    "max_depth": 6,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "objective": "binary:logistic",
+    "eval_metric": "aucpr",
+    "scale_pos_weight": 12.590033975084937,
+    "tree_method": "hist",
+    "n_jobs": -1
+  },
+  "training_duration_seconds": 1.82,
+  "validation_metrics": {
+    "pr_auc": 1.0,
+    "roc_auc": 1.0,
+    "log_loss": 5.093879735795781e-05,
+    "brier_score": 1.9657352368085412e-06,
+    "precision_at_0_50": 1.0,
+    "recall_at_0_50": 1.0,
+    "f1_at_0_50": 1.0
+  },
+  "diagnostic_confusion_matrix_at_0_50": {
+    "true_positive": 1065,
+    "false_positive": 0,
+    "true_negative": 8935,
+    "false_negative": 0
+  },
+  "top_15_features": [
+    {
+      "rank": 1,
+      "feature_name": "device_tx_count_1h",
+      "importance": 0.4074710011482239
+    },
+    {
+      "rank": 2,
+      "feature_name": "ip_tx_count_1h",
+      "importance": 0.4034239947795868
+    },
+    {
+      "rank": 3,
+      "feature_name": "card_ip_seen_before",
+      "importance": 0.05970500037074089
+    },
+    {
+      "rank": 4,
+      "feature_name": "amount",
+      "importance": 0.027939999476075172
+    },
+    {
+      "rank": 5,
+      "feature_name": "merchant_tx_count_1h",
+      "importance": 0.026830000802874565
+    },
+    {
+      "rank": 6,
+      "feature_name": "customer_ip_seen_before",
+      "importance": 0.021693000569939613
+    },
+    {
+      "rank": 7,
+      "feature_name": "amount_log",
+      "importance": 0.009836000390350819
+    },
+    {
+      "rank": 8,
+      "feature_name": "customer_device_seen_before",
+      "importance": 0.007552000228315592
+    },
+    {
+      "rank": 9,
+      "feature_name": "device_tx_count_24h",
+      "importance": 0.005501999985426664
+    },
+    {
+      "rank": 10,
+      "feature_name": "device_unique_customers_24h",
+      "importance": 0.0034570000134408474
+    },
+    {
+      "rank": 11,
+      "feature_name": "customer_amount_ratio",
+      "importance": 0.0027439999394118786
+    },
+    {
+      "rank": 12,
+      "feature_name": "amount_cents",
+      "importance": 0.0019310000352561474
+    },
+    {
+      "rank": 13,
+      "feature_name": "device_unique_cards_24h",
+      "importance": 0.0019099999917671084
+    },
+    {
+      "rank": 14,
+      "feature_name": "product_code_freq",
+      "importance": 0.0017209999496117234
+    },
+    {
+      "rank": 15,
+      "feature_name": "customer_tx_count_1h",
+      "importance": 0.0016560000367462635
+    }
+  ],
+  "untouched_splits": [
+    "calibration.csv",
+    "policy.csv",
+    "test.csv"
+  ]
+}

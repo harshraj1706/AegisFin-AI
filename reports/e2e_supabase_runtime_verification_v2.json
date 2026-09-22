@@ -1,0 +1,209 @@
+{
+  "timestamp": "2026-09-21T14:29:40.737146+00:00",
+  "steps": {
+    "step1_schema_verification": {
+      "status": "PASS",
+      "details": {
+        "fraud_feature_snapshots_columns": {
+          "id": "EXISTS",
+          "transaction_id": "EXISTS",
+          "feature_contract_version": "EXISTS",
+          "model_version": "EXISTS",
+          "feature_count": "EXISTS",
+          "features": "EXISTS",
+          "created_at": "EXISTS",
+          "prediction_id": "CONFIRMED_ABSENT",
+          "customer_id": "CONFIRMED_ABSENT",
+          "snapshot_timestamp": "CONFIRMED_ABSENT"
+        },
+        "fraud_predictions_columns": {
+          "id": "EXISTS",
+          "transaction_id": "EXISTS",
+          "model_name": "EXISTS",
+          "model_version": "EXISTS",
+          "calibration_version": "EXISTS",
+          "policy_version": "EXISTS",
+          "fraud_probability": "EXISTS",
+          "fraud_band": "EXISTS",
+          "decision": "EXISTS",
+          "prediction_latency_ms": "EXISTS",
+          "created_at": "EXISTS",
+          "raw_fraud_probability": "EXISTS",
+          "calibrated_fraud_probability": "EXISTS",
+          "risk_band": "EXISTS",
+          "recommended_action": "EXISTS",
+          "feature_contract_version": "EXISTS",
+          "calibrator_type": "EXISTS",
+          "scored_at": "EXISTS"
+        },
+        "fraud_transactions_accessible": true,
+        "fraud_entity_state_accessible": true
+      },
+      "discrepancy_resolution": "Step 16 narrative mentioned 'prediction_id, customer_id, snapshot_timestamp' as informal column descriptions, but actual PostgreSQL DDL and app/fraud_router.py both use the canonical columns: id, transaction_id, feature_contract_version, model_version, feature_count, features, created_at. Application and database are in 100% agreement."
+    },
+    "step2_prediction_contract": {
+      "status": "PASS"
+    },
+    "step3_snapshot_contract": {
+      "status": "PASS"
+    },
+    "step4_backend_startup": {
+      "status": "PASS",
+      "http_code": 200,
+      "health_response": {
+        "status": "ready",
+        "fraud_model_loaded": true,
+        "model_name": "XGBoost",
+        "model_version": "2.1.0",
+        "calibration_version": "2.1.0",
+        "policy_version": "2.0.0",
+        "feature_contract_version": "2.1.0",
+        "calibration_method": "Platt",
+        "calibrator_type": "sigmoid",
+        "expected_feature_count": 62,
+        "risk_bands": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ]
+      },
+      "latency_ms": 15.820799977518618
+    },
+    "step5_test_transaction": {
+      "status": "PASS",
+      "http_code": 200,
+      "latency_ms": 9118.382300017402,
+      "response": {
+        "transaction_id": "TEST_E2E_TXN_637284ac",
+        "fraud_probability": 0.31492378125063464,
+        "fraud_band": "REVIEW",
+        "decision": "MANUAL_REVIEW",
+        "model_name": "XGBoost",
+        "model_version": "2.1.0",
+        "calibration_version": "2.1.0",
+        "policy_version": "2.0.0",
+        "prediction_latency_ms": 2.8506,
+        "raw_fraud_probability": 0.6831658482551575,
+        "calibrated_fraud_probability": 0.31492378125063464,
+        "risk_band": "MEDIUM",
+        "recommended_action": "STEP_UP_AUTH",
+        "feature_contract_version": "2.1.0",
+        "calibrator_type": "sigmoid",
+        "scored_at": "2026-09-21T14:29:59.846802+00:00",
+        "raw_probability": 0.6831658482551575,
+        "calibration_method": "Platt",
+        "feature_count": 62
+      }
+    },
+    "step6_database_writes": {
+      "status": "PASS",
+      "tx_row_count": 1,
+      "pred_row_count": 1,
+      "snap_row_count": 1,
+      "db_prediction": {
+        "id": "296a33ea-c437-4b98-a6ce-b8ef05c8d08e",
+        "transaction_id": "TEST_E2E_TXN_637284ac",
+        "model_name": "XGBoost",
+        "model_version": "2.1.0",
+        "calibration_version": "2.1.0",
+        "policy_version": "2.0.0",
+        "fraud_probability": 0.3149238,
+        "fraud_band": "REVIEW",
+        "decision": "MANUAL_REVIEW",
+        "prediction_latency_ms": 2.8506,
+        "created_at": "2026-09-21T14:30:01.972461+00:00",
+        "raw_fraud_probability": 0.6831658,
+        "calibrated_fraud_probability": 0.3149238,
+        "risk_band": "MEDIUM",
+        "recommended_action": "STEP_UP_AUTH",
+        "feature_contract_version": "2.1.0",
+        "calibrator_type": "sigmoid",
+        "scored_at": "2026-09-21T14:29:59.846802+00:00"
+      },
+      "db_snapshot_meta": {
+        "id": 31,
+        "transaction_id": "TEST_E2E_TXN_637284ac",
+        "feature_contract_version": "2.1.0",
+        "model_version": "2.1.0",
+        "feature_count": 62,
+        "created_at": "2026-09-21T14:29:59.846802+00:00"
+      }
+    },
+    "step7_snapshot_content": {
+      "status": "PASS",
+      "feature_count": 62,
+      "keys_match_valid_contract": true,
+      "no_forbidden_labels": true,
+      "all_numeric": true,
+      "values_match_inference": true,
+      "mismatches": []
+    },
+    "step8_anti_leakage": {
+      "status": "PASS",
+      "first_customer_tx_count_1h": 0.0,
+      "second_customer_tx_count_1h": 1.0,
+      "first_card_tx_count_1h": 0.0,
+      "second_card_tx_count_1h": 1.0,
+      "guarantee": "First transaction saw 0 prior transactions; second transaction saw strictly prior transaction."
+    },
+    "step9_duplicate_protection": {
+      "status": "PASS",
+      "http_code": 409,
+      "tx_row_count": 1,
+      "pred_row_count": 1,
+      "snap_row_count": 1
+    },
+    "step10_legacy_compatibility": {
+      "status": "PASS",
+      "legacy": {
+        "fraud_probability": 0.31492378125063464,
+        "fraud_band": "REVIEW",
+        "decision": "MANUAL_REVIEW"
+      },
+      "canonical": {
+        "calibrated_fraud_probability": 0.31492378125063464,
+        "risk_band": "MEDIUM",
+        "recommended_action": "STEP_UP_AUTH"
+      }
+    },
+    "step11_entity_state": {
+      "status": "PASS",
+      "entity_key": "CUST_E2E_637284ac",
+      "transaction_count": 2,
+      "amount_sum": 885.5,
+      "last_amount": 500.0
+    },
+    "step12_streamlit_integration": {
+      "status": "PASS",
+      "streamlit_status_code": 200,
+      "history_feed_status": 200,
+      "high_risk_feed_status": 200,
+      "history_items_count": 5
+    },
+    "step13_cleanup": {
+      "status": "PASS",
+      "cleaned_records": {
+        "snapshots_deleted": 2,
+        "predictions_deleted": 2,
+        "transactions_deleted": 2,
+        "entity_states_deleted": 2,
+        "test_user_deleted": "19f5b79a-8da1-4c9c-b9d5-6b5d492df442"
+      }
+    }
+  },
+  "summary": {
+    "e2e_status": "PASS",
+    "api_status": "PASS",
+    "prediction_persistence": "PASS",
+    "snapshot_persistence": "PASS",
+    "exact_62_features": "PASS",
+    "anti_leakage": "PASS",
+    "duplicate_handling": "PASS",
+    "entity_state": "PASS",
+    "streamlit": "PASS",
+    "cleanup": "PASS",
+    "total_steps_passed": 13,
+    "total_steps": 13
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "report_title": "AegisFin Phase 2: Chronological Splits v2 Report",
+  "generated_at_utc": "2026-09-21T04:21:00Z",
+  "dataset_version": "2.1.0",
+  "engine_version": "v2",
+  "source_dataset": "data/behavioral/production_features_100k_v2.csv",
+  "random_seed": 42,
+  "total_rows": 100000,
+  "split_proportions": {
+    "train": 0.60,
+    "validation": 0.10,
+    "calibration": 0.10,
+    "policy": 0.10,
+    "test": 0.10
+  },
+  "overall_statistics": {
+    "total_rows": 100000,
+    "total_fraud_count": 8238,
+    "total_legitimate_count": 91762,
+    "total_fraud_rate_pct": 8.238,
+    "feature_count": 62
+  },
+  "splits": {
+    "train": {
+      "row_count": 60000,
+      "fraud_count": 4577,
+      "legitimate_count": 55423,
+      "fraud_rate_pct": 7.6283,
+      "start_timestamp_utc": "2026-01-01T00:00:02.926862+00:00",
+      "end_timestamp_utc": "2026-01-28T05:18:19.404436+00:00",
+      "file_path": "data/behavioral/splits_v2/train.csv"
+    },
+    "validation": {
+      "row_count": 10000,
+      "fraud_count": 1005,
+      "legitimate_count": 8995,
+      "fraud_rate_pct": 10.05,
+      "start_timestamp_utc": "2026-01-28T05:18:49.163519+00:00",
+      "end_timestamp_utc": "2026-02-01T15:22:47.295308+00:00",
+      "file_path": "data/behavioral/splits_v2/validation.csv"
+    },
+    "calibration": {
+      "row_count": 10000,
+      "fraud_count": 976,
+      "legitimate_count": 9024,
+      "fraud_rate_pct": 9.76,
+      "start_timestamp_utc": "2026-02-01T15:22:48.459352+00:00",
+      "end_timestamp_utc": "2026-02-06T02:12:07.838265+00:00",
+      "file_path": "data/behavioral/splits_v2/calibration.csv"
+    },
+    "policy": {
+      "row_count": 10000,
+      "fraud_count": 857,
+      "legitimate_count": 9143,
+      "fraud_rate_pct": 8.57,
+      "start_timestamp_utc": "2026-02-06T02:12:50.525511+00:00",
+      "end_timestamp_utc": "2026-02-10T12:40:40.879628+00:00",
+      "file_path": "data/behavioral/splits_v2/policy.csv"
+    },
+    "test": {
+      "row_count": 10000,
+      "fraud_count": 823,
+      "legitimate_count": 9177,
+      "fraud_rate_pct": 8.23,
+      "start_timestamp_utc": "2026-02-10T12:40:51.648317+00:00",
+      "end_timestamp_utc": "2026-02-14T23:59:08.245883+00:00",
+      "file_path": "data/behavioral/splits_v2/test.csv"
+    }
+  },
+  "chronological_boundaries": {
+    "train_end": "2026-01-28T05:18:19.404436+00:00",
+    "validation_start": "2026-01-28T05:18:49.163519+00:00",
+    "gap_train_to_val_sec": 29.759,
+    "validation_end": "2026-02-01T15:22:47.295308+00:00",
+    "calibration_start": "2026-02-01T15:22:48.459352+00:00",
+    "gap_val_to_calib_sec": 1.164,
+    "calibration_end": "2026-02-06T02:12:07.838265+00:00",
+    "policy_start": "2026-02-06T02:12:50.525511+00:00",
+    "gap_calib_to_policy_sec": 42.687,
+    "policy_end": "2026-02-10T12:40:40.879628+00:00",
+    "test_start": "2026-02-10T12:40:51.648317+00:00",
+    "gap_policy_to_test_sec": 10.768,
+    "test_end": "2026-02-14T23:59:08.245883+00:00",
+    "strictly_monotonic": true
+  },
+  "validation_checks": {
+    "check_1_total_row_count_100k": {
+      "status": "PASSED",
+      "details": "Exactly 100,000 rows across all 5 partitions"
+    },
+    "check_2_train_row_count_60k": {
+      "status": "PASSED",
+      "details": "Train partition has exactly 60,000 rows (60.0%)"
+    },
+    "check_3_validation_row_count_10k": {
+      "status": "PASSED",
+      "details": "Validation partition has exactly 10,000 rows (10.0%)"
+    },
+    "check_4_calibration_row_count_10k": {
+      "status": "PASSED",
+      "details": "Calibration partition has exactly 10,000 rows (10.0%)"
+    },
+    "check_5_policy_row_count_10k": {
+      "status": "PASSED",
+      "details": "Policy partition has exactly 10,000 rows (10.0%)"
+    },
+    "check_6_final_test_row_count_10k": {
+      "status": "PASSED",
+      "details": "Final test partition has exactly 10,000 rows (10.0%)"
+    },
+    "check_7_no_transaction_id_overlap": {
+      "status": "PASSED",
+      "details": "0 overlapping transaction IDs between any pairwise combinations of splits; 100,000 unique IDs"
+    },
+    "check_8_strict_chronological_ordering": {
+      "status": "PASSED",
+      "details": "max(Train) < min(Val) < min(Calib) < min(Policy) < min(Test) strictly verified"
+    },
+    "check_9_zero_nan": {
+      "status": "PASSED",
+      "details": "Zero NaN values detected across all 62 features in all 5 splits"
+    },
+    "check_10_zero_inf": {
+      "status": "PASSED",
+      "details": "Zero Inf values detected across all 62 features in all 5 splits"
+    },
+    "check_11_exact_62_production_features": {
+      "status": "PASSED",
+      "details": "All 5 splits contain exactly the 62 validated production features in schema order"
+    },
+    "check_12_binary_fraud_label": {
+      "status": "PASSED",
+      "details": "fraud_label values are strictly integers {0, 1}"
+    },
+    "check_13_both_classes_present_in_every_split": {
+      "status": "PASSED",
+      "details": "Both legitimate (0) and fraud (1) samples exist in every single split"
+    },
+    "check_14_no_scenario_columns": {
+      "status": "PASSED",
+      "details": "Zero scenario or generator-only metadata columns in feature space"
+    },
+    "check_15_no_modification_to_v1_split_files": {
+      "status": "PASSED",
+      "details": "All v1 split files verified against pre-execution SHA-256 hashes with zero bytes changed"
+    },
+    "check_16_final_test_isolated": {
+      "status": "PASSED",
+      "details": "Final test partition is strictly chronologically isolated and untouched by model fitting or threshold tuning"
+    }
+  },
+  "v1_checksum_verification": {
+    "calibration.csv": {
+      "sha256": "009ab87a9d38e8e6676fce95f22cc565af5f853a1ccea5b4af29565de1f50bf0",
+      "status": "MATCH"
+    },
+    "policy.csv": {
+      "sha256": "35a2001f55078affd91856eda29e215a4a84387573ea6afcacda3858aa28ec74",
+      "status": "MATCH"
+    },
+    "split_metadata.json": {
+      "sha256": "77ff37b98bd95c0541f1bac9e56e2694484de00757a8f0de3f251a1fab49d7dd",
+      "status": "MATCH"
+    },
+    "test.csv": {
+      "sha256": "a4e370ffbfd77443ddd86a2334f42a2ad714b73ab0ecc4e847898c6e9019022e",
+      "status": "MATCH"
+    },
+    "train.csv": {
+      "sha256": "61cca17da3a85f636c12e0a4e00df7f7ddf029397a9d591d8dddab8bec988773",
+      "status": "MATCH"
+    },
+    "validation.csv": {
+      "sha256": "da3bf6f73b928c7e43f15cf3d9aca7ce0f47b11289f7d1777781a5f0f3dcde0f",
+      "status": "MATCH"
+    }
+  },
+  "output_files": {
+    "train_csv": "data/behavioral/splits_v2/train.csv",
+    "validation_csv": "data/behavioral/splits_v2/validation.csv",
+    "calibration_csv": "data/behavioral/splits_v2/calibration.csv",
+    "policy_csv": "data/behavioral/splits_v2/policy.csv",
+    "test_csv": "data/behavioral/splits_v2/test.csv",
+    "split_metadata_json": "data/behavioral/splits_v2/split_metadata.json"
+  }
+}
